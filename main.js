@@ -34,30 +34,28 @@ const SWAP_RATIO = 10;
 const SWAP_CAP = 50;
 const MIN_SWAP_USDC = 10; // must swap >= 10 USDC eq
 
-// Mint (liquidity): 1 point / 10 USDC eq, up to 100
-const MINT_RATIO = 10;
-const MINT_CAP = 100;
-const MIN_MINT_USDC = 10; // must add >= 10 USDC eq
+// Final Liquidity: 1 point / 10 USDC eq net, up to 100
+const LIQ_RATIO = 10;
+const LIQ_CAP   = 100;
+const MIN_LIQ_USDC = 10; // must have at least 10 net eq to get points
 
 /****************************************************
  * 3) Fixed-Point Tasks
  ****************************************************/
 const FIXED_ACTIONS = {
-  'con_pixel_frames|create_thing': 5, // NFT Mint
-  'con_pixel_frames|buy_thing': 3,    // NFT Purchase
-  'con_name_service_final|mint_name': 2, // XNS Mint
-  'currency|transfer': 1              // Xian Token Transfer
+  'con_pixel_frames|create_thing': 5,   // NFT Mint
+  'con_pixel_frames|buy_thing': 3,      // NFT Purchase
+  'con_name_service_final|mint_name': 2,// XNS Mint
+  'currency|transfer': 1                // Xian Token Transfer
 };
 
 /****************************************************
- * 4) Determine Points from "Top-Level" Action
- *    - Bridging (con_usdc.mint)
- *    - Or the fixed tasks (NFT, XNS, Transfer)
+ * 4) "Immediate" Points for Bridging & Fixed
  ****************************************************/
 function getTopLevelPoints(node) {
   const { contract, function: funcName, sender, jsonContent } = node;
   let points = 0;
-  let awardAddress = sender; // default
+  let awardAddress = sender;
 
   // 4.1 Bridging: con_usdc.mint
   if (contract === 'con_usdc' && funcName === 'mint') {
@@ -66,9 +64,9 @@ function getTopLevelPoints(node) {
     const toAddr = kwargs.to;
 
     if (minted > 0) {
-      // 1 point / 100 USDC minted, capped at 5
+      // 1 point / 100 USDC minted, capped 5
       const rawPts = Math.floor(minted / BRIDGE_POINTS_PER);
-      points = (rawPts > BRIDGE_CAP) ? BRIDGE_CAP : rawPts;
+      points = Math.min(rawPts, BRIDGE_CAP);
       awardAddress = toAddr;
     }
     return { points, address: awardAddress };
@@ -78,25 +76,28 @@ function getTopLevelPoints(node) {
   const key = `${contract}|${funcName}`;
   if (key in FIXED_ACTIONS) {
     points = FIXED_ACTIONS[key];
-    if (points > 0) {
-      // For Xian Transfer, must have at least 1 token
-      if (key === 'currency|transfer') {
-        const kwargs = jsonContent?.payload?.kwargs || {};
-        const amount = parseFloat(kwargs.amount ?? '0');
-        if (amount < 1) {
-          points = 0;
-        }
-      }
+    // e.g. Xian Transfer => must be >=1
+    if (key === 'currency|transfer') {
+      const kwargs = jsonContent?.payload?.kwargs || {};
+      const amt = parseFloat(kwargs.amount ?? '0');
+      if (amt < 1) points = 0;
     }
     return { points, address: awardAddress };
   }
 
-  // 4.3 Otherwise, 0
   return { points: 0, address: sender };
 }
 
 /****************************************************
- * 5) MAIN FETCH LOGIC
+ * 5) We'll track net minted vs burned for liquidity
+ ****************************************************/
+// user => total minted USDC eq
+const mintedVolume = {};
+// user => total burned USDC eq
+const burnedVolume = {};
+
+/****************************************************
+ * 6) MAIN
  ****************************************************/
 fetch('https://node.xian.org/graphql', {
   method: 'POST',
@@ -106,88 +107,100 @@ fetch('https://node.xian.org/graphql', {
 .then(res => res.json())
 .then(response => {
   const edges = response.data.allTransactions.edges;
-  const scoreboard = {}; // { [address]: totalPoints }
+  // scoreboard => immediate points from bridging, swaps, fixed
+  const scoreboard = {};
 
   edges.forEach(({ node }) => {
-    if (!node.success) return; // skip failed
+    if (!node.success) return;
 
-    // 5.1 Award bridging/fixed tasks from top-level
+    // 6.1 Immediate bridging/fixed points
     const { points, address } = getTopLevelPoints(node);
     if (points > 0 && address) {
-      if (!scoreboard[address]) scoreboard[address] = 0;
-      scoreboard[address] += points;
+      scoreboard[address] = (scoreboard[address] || 0) + points;
     }
 
-    // 5.2 Parse con_pairs events for Swap/Mint volume
+    // 6.2 Parse con_pairs events for Swaps, Mints, Burns
     const events = node.jsonContent?.tx_result?.events || [];
     events.forEach(evt => {
-      // We only care about con_pairs
       if (evt.contract !== 'con_pairs') return;
 
-      const user = evt.signer; // potentially the user
+      // We only track pair=1
+      const pairId = evt.data_indexed?.pair;
+      if (pairId !== "1") return;
+
+      const user = evt.signer;
       if (!user) return;
 
-      // Check event type
+      // 6.2.1: Check if it's a Swap
       if (evt.event === 'Swap') {
-        // data => { amount0In, amount1In, ... }
         const data = evt.data || {};
-
-        // only if pair=1
-        const pairId = evt.data_indexed?.pair;
-        if (pairId !== "1") return; 
-        
         const amount0In = parseFloat(data.amount0In ?? '0');
         const amount1In = parseFloat(data.amount1In ?? '0');
 
         let usdcEq = 0;
-        // If user spent currency, convert
-        if (amount1In > 0) {
-          usdcEq += currencyToUsdc(amount1In);
-        }
-        // If user spent some token0 (assuming it's USDC), add directly
-        if (amount0In > 0) {
-          usdcEq += amount0In;
-        }
+        // token0=con_usdc
+        if (amount0In > 0) usdcEq += amount0In;
+        // token1=currency => *0.01
+        if (amount1In > 0) usdcEq += currencyToUsdc(amount1In);
 
-        // Must meet min swap
         if (usdcEq >= MIN_SWAP_USDC) {
           const rawPts = Math.floor(usdcEq / SWAP_RATIO);
-          const swapPts = (rawPts > SWAP_CAP) ? SWAP_CAP : rawPts;
-          if (!scoreboard[user]) scoreboard[user] = 0;
-          scoreboard[user] += swapPts;
+          const swapPts = Math.min(rawPts, SWAP_CAP);
+          scoreboard[user] = (scoreboard[user] || 0) + swapPts;
         }
       }
+      // 6.2.2: Check if it's a Mint or Burn
       else if (evt.event === 'Mint') {
-        // data => { amount0, amount1, to, ... }
+        // user minted liquidity
         const data = evt.data || {};
         const amount0 = parseFloat(data.amount0 ?? '0');
         const amount1 = parseFloat(data.amount1 ?? '0');
 
         let usdcEq = 0;
-        // assume amount1 is currency
-        if (amount1 > 0) {
-          usdcEq += currencyToUsdc(amount1);
-        }
-        // assume amount0 is USDC
-        if (amount0 > 0) {
-          usdcEq += amount0;
-        }
+        if (amount0 > 0) usdcEq += amount0;
+        if (amount1 > 0) usdcEq += currencyToUsdc(amount1);
 
-        // Must meet min 10 USDC eq
-        if (usdcEq >= MIN_MINT_USDC) {
-          const rawPts = Math.floor(usdcEq / MINT_RATIO);
-          const mintPts = (rawPts > MINT_CAP) ? MINT_CAP : rawPts;
-          if (!scoreboard[user]) scoreboard[user] = 0;
-          scoreboard[user] += mintPts;
-        }
+        if (!mintedVolume[user]) mintedVolume[user] = 0;
+        mintedVolume[user] += usdcEq;
+      }
+      else if (evt.event === 'Burn') {
+        // user removed liquidity
+        const data = evt.data || {};
+        const amount0 = parseFloat(data.amount0 ?? '0');
+        const amount1 = parseFloat(data.amount1 ?? '0');
+
+        let usdcEq = 0;
+        if (amount0 > 0) usdcEq += amount0;
+        if (amount1 > 0) usdcEq += currencyToUsdc(amount1);
+
+        if (!burnedVolume[user]) burnedVolume[user] = 0;
+        burnedVolume[user] += usdcEq;
       }
     });
   });
 
-  // Sort scoreboard descending
+  /****************************************************
+   * 7) Final Step: Compute net liquidity points
+   ****************************************************/
+  Object.keys(mintedVolume).forEach(user => {
+    const minted = mintedVolume[user] || 0;
+    const burned = burnedVolume[user] || 0;
+    const net = minted - burned; // net USDC eq
+
+    if (net >= MIN_LIQ_USDC) {
+      // e.g. 1 point / 10 USDC eq, capped at 100
+      const rawPts = Math.floor(net / LIQ_RATIO);
+      const finalPts = Math.min(rawPts, LIQ_CAP);
+
+      // add to scoreboard
+      scoreboard[user] = (scoreboard[user] || 0) + finalPts;
+    }
+  });
+
+  // 8) Sort scoreboard
   const sorted = Object.entries(scoreboard).sort((a,b) => b[1] - a[1]);
 
-  // Build table
+  // 9) Build table
   const tbody = document.querySelector('#leaderboard tbody');
   sorted.forEach(([addr, pts], i) => {
     const row = document.createElement('tr');

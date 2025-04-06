@@ -19,7 +19,7 @@
 <body class="bg-light">
 
   <div class="container my-4">
-    <h1 class="mb-4 text-center">Xian Activity Dashboard</h1>
+    <h1 class="mb-4 text-center">Xian Activity Dashboard (Net Liquidity)</h1>
 
     <!-- Explanation -->
     <div class="row">
@@ -35,19 +35,18 @@
               <em>1 point per 100 USDC minted</em> (capped at 5 points). Points go to <code>kwargs.to</code>.
             </p>
             <p>
-              <strong>Trading &amp; Liquidity:</strong>
-              We read <code>Swap</code> &amp; <code>Mint</code> events from <code>con_pairs</code>, where 
-              <code>token1=currency</code> (1 <code>currency</code> = 0.01 USDC). We only count the XIAN/xUSDC pair.
+              <strong>Swaps (con_pairs Swap event):</strong> 
+              <em>1 point per 10 USDC eq</em> (min 10, capped at 50) awarded immediately. 
+              We assume pair=1 is <code>con_usdc</code> &amp; <code>currency</code>.
             </p>
-            <ul>
-              <li><strong>Swap (Swap event):</strong> 
-                1 point / 10 USDC eq, min 10 USDC eq, capped at 50 points per swap. 
-                Award points to <code>event.signer</code>.</li>
-              <li><strong>Mint (Mint event):</strong>
-                1 point / 10 USDC eq added, min 10 USDC eq, capped at 100 points. 
-                Also awarded to <code>event.signer</code>.
-              </li>
-            </ul>
+            <p>
+              <strong>Liquidity (Mint &amp; Burn events in con_pairs):</strong> 
+              we <em>don’t</em> award points per transaction. Instead, we track the user’s net minted 
+              minus net burned. The final net is converted to points at 
+              <em>1 point per 10 USDC eq</em> (capped at 100). If a user adds and later removes the 
+              same amount of liquidity, their net is zero → no final liquidity points. This prevents 
+              repeated add–remove cycles.
+            </p>
             <p>
               <strong>Other Fixed Tasks:</strong>
             </p>
@@ -57,7 +56,6 @@
               <li>XNS Mint (<code>con_name_service_final.mint_name</code>): +2</li>
               <li>Xian Token Transfer (<code>currency.transfer</code>): +1 (must transfer &ge; 1 token)</li>
             </ul>
-            
           </div>
         </div>
 
@@ -97,6 +95,6 @@
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
   </script>
-  <script src="main.js?v=6"></script>
+  <script src="main.js?v=8"></script>
 </body>
 </html>
