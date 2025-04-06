@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Xian Leaderboard – Volume + Fixed + Sybil Checks</title>
+  <title>Xian Leaderboard – con_pairs Events</title>
 
   <!-- Bootstrap 5 (CDN) -->
   <link 
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
   />
 
@@ -19,86 +19,48 @@
 <body class="bg-light">
 
   <div class="container my-4">
-    <h1 class="mb-4 text-center">Xian Leaderboard (All Tasks + Sybil Checks)</h1>
+    <h1 class="mb-4 text-center">Xian Leaderboard (Trades &amp; Liquidity via con_pairs)</h1>
 
-    <!-- EXPLANATION OF SCORING -->
+    <!-- Explanation -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
-
-        <!-- Card: Volume-Based Rewards -->
+        
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Volume-Based Tasks</h4>
+            <h4 class="mb-0">Scoring Breakdown</h4>
           </div>
           <div class="card-body">
             <p>
-              We award points based on volume <em>only</em> for the following actions, 
-              and <strong>only</strong> if they involve <code>con_usdc</code> or 
-              <code>currency</code>. We count <code>1 currency = 0.01 USDC</code>.
+              <strong>Bridging (con_usdc.mint):</strong> 
+              <em>1 point per 100 USDC minted</em> (capped at 5 points). Points go to <code>kwargs.to</code>.
+            </p>
+            <p>
+              <strong>Trading &amp; Liquidity:</strong>
+              We read <code>Swap</code> &amp; <code>Mint</code> events from <code>con_pairs</code>, where 
+              <code>token1=currency</code> (1 <code>currency</code> = 0.01 USDC).
             </p>
             <ul>
-              <li>
-                <strong>Bridging</strong> (<code>con_usdc</code>/<code>mint</code>): 
-                <code>1 point per 10 USDC minted</code>, <em>capped at 100 pts</em> 
-                per transaction, and requires at least 10 USDC minted. 
-                Points go to <code>kwargs.to</code> (the bridged user).
-              </li>
-              <li>
-                <strong>Swapping</strong> (<code>con_dex_v2</code>/<code>swapExactTokenForTokenSupportingFeeOnTransferTokens</code>): 
-                <code>1 point per 10 USDC eq</code> swapped (<code>kwargs.amountIn</code>), 
-                <em>capped at 50 pts</em>, minimum 10 USDC eq to qualify. 
-                Points awarded to the transaction <code>sender</code>.
-              </li>
-              <li>
-                <strong>Add Liquidity</strong> (<code>con_dex_v2</code>/<code>addLiquidity</code>): 
-                sum the USDC eq for <code>tokenA</code> + <code>tokenB</code>, 
-                <code>1 point per 10 USDC eq</code>, <em>capped at 100 pts</em>, 
-                min 10 USDC eq total to qualify. 
-                Points awarded to the <code>sender</code>.
+              <li><strong>Swap (Swap event):</strong> 
+                1 point / 10 USDC eq, min 10 USDC eq, capped at 50 points per swap. 
+                Award points to <code>event.signer</code>.</li>
+              <li><strong>Mint (Mint event):</strong>
+                1 point / 10 USDC eq added, min 10 USDC eq, capped at 100 points. 
+                Also awarded to <code>event.signer</code>.
               </li>
             </ul>
-          </div>
-        </div>
-
-        <!-- Card: Fixed-Point Tasks -->
-        <div class="card mb-4">
-          <div class="card-header bg-info text-dark">
-            <h4 class="mb-0">Fixed-Point Tasks</h4>
-          </div>
-          <div class="card-body">
+            <p>
+              <strong>Other Fixed Tasks:</strong>
+            </p>
             <ul>
-              <li><strong>NFT Mint</strong> (<code>con_pixel_frames</code>/<code>create_thing</code>): +5 pts</li>
-              <li><strong>NFT Purchase</strong> (<code>con_pixel_frames</code>/<code>buy_thing</code>): +3 pts</li>
-              <li><strong>XNS Mint</strong> (<code>con_name_service_final</code>/<code>mint_name</code>): +2 pts</li>
-              <li>
-                <strong>Xian Token Transfer</strong> (<code>currency</code>/<code>transfer</code>): +1 pt 
-                (requires at least 1 token transferred to get points)
-              </li>
-              <li>
-                <strong>Contract Deployment</strong> (<code>submission</code>/<code>submit_contract</code>): +15 pts 
-                (only once per unique contract code – repeated codes yield 0).
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- Card: Sybil Checks -->
-        <div class="card mb-4">
-          <div class="card-header bg-warning text-dark">
-            <h4 class="mb-0">Sybil Resistance</h4>
-          </div>
-          <div class="card-body">
-            <p>We apply several filters to prevent trivial or spammy transactions:</p>
-            <ul>
-              <li><strong>Minimum Volume</strong> for bridging, swapping, addLiquidity 
-                (<code>10 USDC eq</code>)</li>
-              <li><strong>Xian Transfer Threshold:</strong> must transfer at least 1 token to get the +1 point</li>
-              <li><strong>Unique Contract Code:</strong> only first submission of a given code is scored</li>
-              <li><strong>Per-TX Caps:</strong> bridging max 100 pts, swapping max 50 pts, addLiquidity max 100 pts</li>
+              <li>NFT Mint (<code>con_pixel_frames.create_thing</code>): +5</li>
+              <li>NFT Purchase (<code>con_pixel_frames.buy_thing</code>): +3</li>
+              <li>XNS Mint (<code>con_name_service_final.mint_name</code>): +2</li>
+              <li>Xian Token Transfer (<code>currency.transfer</code>): +1 (must transfer &ge; 1 token)</li>
             </ul>
             <p class="mb-0">
-              This ensures the leaderboard reflects meaningful usage rather than 
-              repeated micro transactions or duplicate contract submissions.
+              <strong>Note:</strong> Contract deployment points have been removed. 
+              If <code>evt.signer</code> is always <code>con_dex_v2</code> in your chain logs, you may need 
+              additional logic to trace the real user.
             </p>
           </div>
         </div>
@@ -106,13 +68,12 @@
       </div>
     </div>
 
-    <!-- LEADERBOARD -->
+    <!-- Leaderboard -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
-        <div id="status" class="alert alert-info text-center" role="alert">
+        <div id="status" class="alert alert-info text-center">
           Loading data…
         </div>
-
         <div id="leaderboard-container" class="card" style="display: none;">
           <div class="card-header bg-success text-white">
             <h4 class="mb-0">Current Leaderboard</h4>
@@ -130,18 +91,16 @@
                 <tbody></tbody>
               </table>
             </div>
-          </div> <!-- /.card-body -->
-        </div> <!-- /.card -->
+          </div><!--/.card-body-->
+        </div><!--/.card-->
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap (optional) -->
+  <!-- Bootstrap JS -->
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
   </script>
-  
-  <!-- Leaderboard Logic -->
-  <script src="main.js?v=4"></script>
+  <script src="main.js?v=5"></script>
 </body>
 </html>

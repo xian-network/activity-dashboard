@@ -1,5 +1,5 @@
 /****************************************************
- * 1) GRAPHQL QUERY
+ * 1) GraphQL Query
  ****************************************************/
 const query = `
 query Transactions {
@@ -18,156 +18,85 @@ query Transactions {
 `;
 
 /****************************************************
- * 2) USDC Conversion, Caps, Ratios
+ * 2) Conversion and Caps
  ****************************************************/
-// We'll treat 'currency' as 0.01 USDC each
-function toUsdEquivalent(token, amount) {
-  if (token === 'con_usdc') return amount;
-  if (token === 'currency') return amount * 0.01;
-  // for other tokens, we ignore in this example
-  return 0;
+// We'll treat 1 currency = 0.01 USDC
+function currencyToUsdc(amount) {
+  return amount * 0.01;
 }
 
-// Bridging
-const BRIDGE_RATIO = 10;   // 1 pt per 10 USDC
-const BRIDGE_CAP   = 100;  // max bridging pts
-// Swapping
-const SWAP_RATIO = 10;     // 1 pt per 10 USDC eq
-const SWAP_CAP   = 50;     // max swap pts
-// Add Liquidity
-const LIQ_RATIO = 10;      // 1 pt per 10 USDC eq
-const LIQ_CAP   = 100;     // max liq pts
+// Bridging: 1 point / 100 USDC minted, up to 5
+const BRIDGE_POINTS_PER = 100;
+const BRIDGE_CAP = 5;
 
-// We'll require at least 10 USDC eq for bridging/swap/liq to avoid trivial amounts
-const MIN_USD_VOL = 10;
+// Swap: 1 point / 10 USDC eq, up to 50
+const SWAP_RATIO = 10;
+const SWAP_CAP = 50;
+const MIN_SWAP_USDC = 10; // must swap >= 10 USDC eq
+
+// Mint (liquidity): 1 point / 10 USDC eq, up to 100
+const MINT_RATIO = 10;
+const MINT_CAP = 100;
+const MIN_MINT_USDC = 10; // must add >= 10 USDC eq
 
 /****************************************************
- * 3) FIXED-POINT ACTIONS
+ * 3) Fixed-Point Tasks
  ****************************************************/
 const FIXED_ACTIONS = {
-  // NFT Mint
-  'con_pixel_frames|create_thing': 5,
-  // NFT Purchase
-  'con_pixel_frames|buy_thing': 3,
-  // XNS Mint
-  'con_name_service_final|mint_name': 2,
-  // Xian Token Transfer
-  'currency|transfer': 1,
-  // Contract Deployment
-  'submission|submit_contract': 15
+  'con_pixel_frames|create_thing': 5, // NFT Mint
+  'con_pixel_frames|buy_thing': 3,    // NFT Purchase
+  'con_name_service_final|mint_name': 2, // XNS Mint
+  'currency|transfer': 1              // Xian Token Transfer
 };
 
 /****************************************************
- * 4) HELPER: getPointsAndAddress
+ * 4) Determine Points from "Top-Level" Action
+ *    - Bridging (con_usdc.mint)
+ *    - Or the fixed tasks (NFT, XNS, Transfer)
  ****************************************************/
-const uniqueContractCodes = new Set();
-
-function getPointsAndAddress(node) {
+function getTopLevelPoints(node) {
   const { contract, function: funcName, sender, jsonContent } = node;
-  const kwargs = jsonContent?.payload?.kwargs || {};
-
-  // Default awarding address = sender
-  let awardAddress = sender;
   let points = 0;
+  let awardAddress = sender; // default
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // 4.1 BRIDGING: con_usdc / mint
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // 4.1 Bridging: con_usdc.mint
   if (contract === 'con_usdc' && funcName === 'mint') {
-    awardAddress = kwargs.to; // bridging goes to the minted address
+    const kwargs = jsonContent?.payload?.kwargs || {};
     const minted = parseFloat(kwargs.amount ?? '0');
-    if (minted < MIN_USD_VOL) return { points: 0, awardAddress };
+    const toAddr = kwargs.to;
 
-    // 1 point per 10 USDC, capped
-    const rawPoints = Math.floor(minted / BRIDGE_RATIO);
-    points = Math.min(rawPoints, BRIDGE_CAP);
-    return { points, awardAddress };
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // 4.2 SWAP: con_dex_v2 / swapExactTokenForTokenSupportingFeeOnTransferTokens
-  // only if src is con_usdc or currency
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (contract === 'con_dex_v2' && funcName === 'swapExactTokenForTokenSupportingFeeOnTransferTokens') {
-    const srcToken = kwargs.src;
-    const amountIn = parseFloat(kwargs.amountIn ?? '0');
-    if (amountIn <= 0) return { points: 0, awardAddress };
-
-    // convert to USDC eq
-    const usdEq = toUsdEquivalent(srcToken, amountIn);
-    if (usdEq < MIN_USD_VOL) return { points: 0, awardAddress };
-
-    // 1 point per 10 USDC eq, capped at 50
-    const rawPoints = Math.floor(usdEq / SWAP_RATIO);
-    points = Math.min(rawPoints, SWAP_CAP);
-    return { points, awardAddress };
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // 4.3 ADD LIQUIDITY: con_dex_v2 / addLiquidity
-  // only if tokenA,tokenB in {con_usdc, currency}
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  if (contract === 'con_dex_v2' && funcName === 'addLiquidity') {
-    const tokenA = kwargs.tokenA;
-    const tokenB = kwargs.tokenB;
-    const aDesired = parseFloat(kwargs.amountADesired ?? '0');
-    const bDesired = parseFloat(kwargs.amountBDesired ?? '0');
-
-    // ensure both tokens are con_usdc or currency
-    if (!['con_usdc','currency'].includes(tokenA) ||
-        !['con_usdc','currency'].includes(tokenB)) {
-      return { points: 0, awardAddress };
+    if (minted > 0) {
+      // 1 point / 100 USDC minted, capped at 5
+      const rawPts = Math.floor(minted / BRIDGE_POINTS_PER);
+      points = (rawPts > BRIDGE_CAP) ? BRIDGE_CAP : rawPts;
+      awardAddress = toAddr;
     }
-
-    // convert each side to USDC eq
-    const usdEqA = toUsdEquivalent(tokenA, aDesired);
-    const usdEqB = toUsdEquivalent(tokenB, bDesired);
-    const totalUsdEq = usdEqA + usdEqB;
-    if (totalUsdEq < MIN_USD_VOL) return { points: 0, awardAddress };
-
-    // 1 point per 10 USDC eq, capped at 100
-    const rawPoints = Math.floor(totalUsdEq / LIQ_RATIO);
-    points = Math.min(rawPoints, LIQ_CAP);
-    return { points, awardAddress };
+    return { points, address: awardAddress };
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // 4.4 FIXED ACTIONS (NFT, XNS, Xian Transfer, etc.)
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // 4.2 Fixed tasks
   const key = `${contract}|${funcName}`;
   if (key in FIXED_ACTIONS) {
     points = FIXED_ACTIONS[key];
-
-    // synergy checks
-    // - Xian Transfer: must be at least 1
-    if (key === 'currency|transfer') {
-      const amount = parseFloat(kwargs.amount ?? '0');
-      if (amount < 1) {
-        points = 0;
+    if (points > 0) {
+      // For Xian Transfer, must have at least 1 token
+      if (key === 'currency|transfer') {
+        const kwargs = jsonContent?.payload?.kwargs || {};
+        const amount = parseFloat(kwargs.amount ?? '0');
+        if (amount < 1) {
+          points = 0;
+        }
       }
     }
-
-    // - Unique contract code
-    if (key === 'submission|submit_contract') {
-      const code = kwargs.code ?? '';
-      if (!code || uniqueContractCodes.has(code)) {
-        points = 0;
-      } else {
-        uniqueContractCodes.add(code);
-      }
-    }
-
-    return { points, awardAddress };
+    return { points, address: awardAddress };
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // 4.5 Anything else => 0 points
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  return { points: 0, awardAddress };
+  // 4.3 Otherwise, 0
+  return { points: 0, address: sender };
 }
 
 /****************************************************
- * 5) MAIN: Fetch Data, Build Leaderboard
+ * 5) MAIN FETCH LOGIC
  ****************************************************/
 fetch('https://node.xian.org/graphql', {
   method: 'POST',
@@ -180,33 +109,92 @@ fetch('https://node.xian.org/graphql', {
   const scoreboard = {}; // { [address]: totalPoints }
 
   edges.forEach(({ node }) => {
-    if (!node.success) return; // skip failed tx
+    if (!node.success) return; // skip failed
 
-    const { points, awardAddress } = getPointsAndAddress(node);
-    if (points > 0 && awardAddress) {
-      if (!scoreboard[awardAddress]) {
-        scoreboard[awardAddress] = 0;
-      }
-      scoreboard[awardAddress] += points;
+    // 5.1 Award bridging/fixed tasks from top-level
+    const { points, address } = getTopLevelPoints(node);
+    if (points > 0 && address) {
+      if (!scoreboard[address]) scoreboard[address] = 0;
+      scoreboard[address] += points;
     }
+
+    // 5.2 Parse con_pairs events for Swap/Mint volume
+    const events = node.jsonContent?.tx_result?.events || [];
+    events.forEach(evt => {
+      // We only care about con_pairs
+      if (evt.contract !== 'con_pairs') return;
+
+      const user = evt.signer; // potentially the user
+      if (!user) return;
+
+      // Check event type
+      if (evt.event === 'Swap') {
+        // data => { amount0In, amount1In, ... }
+        const data = evt.data || {};
+        const amount0In = parseFloat(data.amount0In ?? '0');
+        const amount1In = parseFloat(data.amount1In ?? '0');
+
+        let usdcEq = 0;
+        // If user spent currency, convert
+        if (amount1In > 0) {
+          usdcEq += currencyToUsdc(amount1In);
+        }
+        // If user spent some token0 (assuming it's USDC), add directly
+        if (amount0In > 0) {
+          usdcEq += amount0In;
+        }
+
+        // Must meet min swap
+        if (usdcEq >= MIN_SWAP_USDC) {
+          const rawPts = Math.floor(usdcEq / SWAP_RATIO);
+          const swapPts = (rawPts > SWAP_CAP) ? SWAP_CAP : rawPts;
+          if (!scoreboard[user]) scoreboard[user] = 0;
+          scoreboard[user] += swapPts;
+        }
+      }
+      else if (evt.event === 'Mint') {
+        // data => { amount0, amount1, to, ... }
+        const data = evt.data || {};
+        const amount0 = parseFloat(data.amount0 ?? '0');
+        const amount1 = parseFloat(data.amount1 ?? '0');
+
+        let usdcEq = 0;
+        // assume amount1 is currency
+        if (amount1 > 0) {
+          usdcEq += currencyToUsdc(amount1);
+        }
+        // assume amount0 is USDC
+        if (amount0 > 0) {
+          usdcEq += amount0;
+        }
+
+        // Must meet min 10 USDC eq
+        if (usdcEq >= MIN_MINT_USDC) {
+          const rawPts = Math.floor(usdcEq / MINT_RATIO);
+          const mintPts = (rawPts > MINT_CAP) ? MINT_CAP : rawPts;
+          if (!scoreboard[user]) scoreboard[user] = 0;
+          scoreboard[user] += mintPts;
+        }
+      }
+    });
   });
 
-  // Sort by descending points
+  // Sort scoreboard descending
   const sorted = Object.entries(scoreboard).sort((a,b) => b[1] - a[1]);
 
-  // Build HTML table
+  // Build table
   const tbody = document.querySelector('#leaderboard tbody');
-  sorted.forEach(([address, pts], index) => {
+  sorted.forEach(([addr, pts], i) => {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${index + 1}</td>
-      <td>${address}</td>
+      <td>${i + 1}</td>
+      <td>${addr}</td>
       <td>${pts}</td>
     `;
     tbody.appendChild(row);
   });
 
-  // Show the results, hide "Loading..."
+  // Show final
   document.getElementById('status').style.display = 'none';
   document.getElementById('leaderboard-container').style.display = 'block';
 })
