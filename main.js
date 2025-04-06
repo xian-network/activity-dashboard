@@ -62,11 +62,6 @@ const SWAP_RATIO = 10;
 const SWAP_CAP = 50;
 const MIN_SWAP_USDC = 10; // must swap >= 10 USDC eq
 
-// Final Liquidity: 1 point / 10 USDC eq net, up to 100
-const LIQ_RATIO = 10;
-const LIQ_CAP   = 100;
-const MIN_LIQ_USDC = 10; // must have at least 10 net eq to get points
-
 /****************************************************
  * 3) Fixed-Point Tasks
  ****************************************************/
