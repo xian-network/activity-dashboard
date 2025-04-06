@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Xian Leaderboard with Sybil Resistance</title>
+
+  <!-- Bootstrap 5 CSS (CDN) -->
+  <link 
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+    rel="stylesheet"
+  />
+
+  <style>
+    /* Custom overrides or extra styling */
+    .leaderboard-table th {
+      background-color: #f8f9fa; /* Slightly different background for table headers */
+    }
+  </style>
+</head>
+<body class="bg-light">
+  
+  <div class="container my-4">
+    <h1 class="mb-4 text-center">Xian Leaderboard</h1>
+
+    <!-- Row for Scoring Explanation -->
+    <div class="row">
+      <div class="col-12 col-lg-8 offset-lg-2">
+        
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">How Scoring Works</h4>
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+              Each type of on-chain action on Xian awards a different number of points.
+              Below is the current breakdown:
+            </p>
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover">
+                <thead class="table-secondary">
+                  <tr>
+                    <th>Action</th>
+                    <th>Contract</th>
+                    <th>Function</th>
+                    <th>Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>DEX Swap</td>
+                    <td>con_dex_v2</td>
+                    <td>swapExactTokenForTokenSupportingFeeOnTransferTokens</td>
+                    <td>+5</td>
+                  </tr>
+                  <tr>
+                    <td>Add Liquidity</td>
+                    <td>con_dex_v2</td>
+                    <td>addLiquidity</td>
+                    <td>+10</td>
+                  </tr>
+                  <tr>
+                    <td>NFT Mint</td>
+                    <td>con_pixel_frames</td>
+                    <td>create_thing</td>
+                    <td>+5</td>
+                  </tr>
+                  <tr>
+                    <td>NFT Purchase</td>
+                    <td>con_pixel_frames</td>
+                    <td>buy_thing</td>
+                    <td>+3</td>
+                  </tr>
+                  <tr>
+                    <td>XNS Mint (Name Service)</td>
+                    <td>con_name_service_final</td>
+                    <td>mint_name</td>
+                    <td>+2</td>
+                  </tr>
+                  <tr>
+                    <td>Xian Token Transfer</td>
+                    <td>currency</td>
+                    <td>transfer</td>
+                    <td>+1</td>
+                  </tr>
+                  <tr>
+                    <td>Contract Deployment</td>
+                    <td>submission</td>
+                    <td>submit_contract</td>
+                    <td>+15</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div> <!-- /.table-responsive -->
+          </div> <!-- /.card-body -->
+        </div> <!-- /.card -->
+
+        <!-- Sybil Resistance Explanation -->
+        <div class="card mb-4">
+          <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">Sybil Resistance Rules</h4>
+          </div>
+          <div class="card-body">
+            <p class="card-text">
+              To discourage spammy or trivial transactions, we apply the following checks:
+            </p>
+            <ul>
+              <li><strong>Minimum Swap Amount:</strong> Swaps below <code>10</code> tokens earn 0 points.</li>
+              <li><strong>Minimum Transfer Amount:</strong> Transfers below <code>1</code> token earn 0 points.</li>
+              <li><strong>Liquidity Threshold:</strong> Add Liquidity actions must add at least <code>5</code> tokens for token A and <code>100</code> tokens for token B. Otherwise, 0 points.</li>
+              <li><strong>Unique Contract Code:</strong> Submitting the exact same contract code more than once yields 0 points (only the first is counted).</li>
+            </ul>
+            <p>
+              These basic filters help ensure that only meaningful on-chain actions
+              are rewarded on the leaderboard.
+            </p>
+          </div>
+        </div>
+
+      </div> <!-- /.col -->
+    </div> <!-- /.row -->
+
+    <!-- Row for Leaderboard -->
+    <div class="row">
+      <div class="col-12 col-lg-8 offset-lg-2">
+        <div id="status" class="alert alert-info text-center" role="alert">
+          Loading data…
+        </div>
+
+        <div id="leaderboard-container" class="card" style="display: none;">
+          <div class="card-header bg-success text-white">
+            <h4 class="mb-0">Current Leaderboard</h4>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table id="leaderboard" class="table table-striped table-hover leaderboard-table mb-0">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Address (sender)</th>
+                    <th>Points</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div> <!-- /.card-body -->
+        </div> <!-- /.card -->
+      </div> <!-- /.col -->
+    </div> <!-- /.row -->
+  </div> <!-- /.container -->
+
+  <!-- Bootstrap 5 JS (Popper + Bootstrap) -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+  </script>
+
+  <!-- Script for Leaderboard Logic -->
+  <script src="main.js"></script>
+</body>
+</html>
