@@ -3,7 +3,7 @@
  ****************************************************/
 const query = `
 query Transactions {
-  allTransactions {
+  allTransactions(filter: {created: {greaterThanOrEqualTo: "2025-04-01T00:00:00.000000", lessThan: "2025-05-01T00:00:00.000000"}}) {
     edges {
       node {
         function
