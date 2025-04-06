@@ -91,10 +91,7 @@ function getTopLevelPoints(node) {
 /****************************************************
  * 5) We'll track net minted vs burned for liquidity
  ****************************************************/
-// user => total minted USDC eq
-const mintedVolume = {};
-// user => total burned USDC eq
-const burnedVolume = {};
+// Removed this, because does not represent activity
 
 /****************************************************
  * 6) MAIN
@@ -149,53 +146,14 @@ fetch('https://node.xian.org/graphql', {
           scoreboard[user] = (scoreboard[user] || 0) + swapPts;
         }
       }
-      // 6.2.2: Check if it's a Mint or Burn
-      else if (evt.event === 'Mint') {
-        // user minted liquidity
-        const data = evt.data || {};
-        const amount0 = parseFloat(data.amount0 ?? '0');
-        const amount1 = parseFloat(data.amount1 ?? '0');
-
-        let usdcEq = 0;
-        if (amount0 > 0) usdcEq += amount0;
-        if (amount1 > 0) usdcEq += currencyToUsdc(amount1);
-
-        if (!mintedVolume[user]) mintedVolume[user] = 0;
-        mintedVolume[user] += usdcEq;
-      }
-      else if (evt.event === 'Burn') {
-        // user removed liquidity
-        const data = evt.data || {};
-        const amount0 = parseFloat(data.amount0 ?? '0');
-        const amount1 = parseFloat(data.amount1 ?? '0');
-
-        let usdcEq = 0;
-        if (amount0 > 0) usdcEq += amount0;
-        if (amount1 > 0) usdcEq += currencyToUsdc(amount1);
-
-        if (!burnedVolume[user]) burnedVolume[user] = 0;
-        burnedVolume[user] += usdcEq;
-      }
+      // Removed tracking of add/remove liq, because does not represent activity
     });
   });
 
   /****************************************************
    * 7) Final Step: Compute net liquidity points
    ****************************************************/
-  Object.keys(mintedVolume).forEach(user => {
-    const minted = mintedVolume[user] || 0;
-    const burned = burnedVolume[user] || 0;
-    const net = minted - burned; // net USDC eq
-
-    if (net >= MIN_LIQ_USDC) {
-      // e.g. 1 point / 10 USDC eq, capped at 100
-      const rawPts = Math.floor(net / LIQ_RATIO);
-      const finalPts = Math.min(rawPts, LIQ_CAP);
-
-      // add to scoreboard
-      scoreboard[user] = (scoreboard[user] || 0) + finalPts;
-    }
-  });
+  // Removed this, because does not represent activity
 
   // 8) Sort scoreboard
   const sorted = Object.entries(scoreboard).sort((a,b) => b[1] - a[1]);

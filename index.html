@@ -19,7 +19,7 @@
 <body class="bg-light">
 
   <div class="container my-4">
-    <h1 class="mb-4 text-center">Xian Activity Dashboard (Net Liquidity)</h1>
+    <h1 class="mb-4 text-center">Xian Activity Dashboard</h1>
 
     <!-- Explanation -->
     <div class="row">
@@ -31,30 +31,23 @@
           </div>
           <div class="card-body">
             <p>
-              <strong>Bridging (con_usdc.mint):</strong> 
-              <em>1 point per 100 USDC minted</em> (capped at 5 points). Points go to <code>kwargs.to</code>.
+              <strong>Bridging:</strong> 
+              <em>1 point per 100 USDC minted</em> (capped at 5 points).
             </p>
             <p>
-              <strong>Swaps (con_pairs Swap event):</strong> 
+              <strong>Swaps:</strong> 
               <em>1 point per 10 USDC eq</em> (min 10, capped at 50) awarded immediately. 
-              We assume pair=1 is <code>con_usdc</code> &amp; <code>currency</code>.
+              This is only tracked for xUSDC / XIAN pair.
             </p>
-            <p>
-              <strong>Liquidity (Mint &amp; Burn events in con_pairs):</strong> 
-              we <em>don’t</em> award points per transaction. Instead, we track the user’s net minted 
-              minus net burned. The final net is converted to points at 
-              <em>1 point per 10 USDC eq</em> (capped at 100). If a user adds and later removes the 
-              same amount of liquidity, their net is zero → no final liquidity points. This prevents 
-              repeated add–remove cycles.
-            </p>
+            
             <p>
               <strong>Other Fixed Tasks:</strong>
             </p>
             <ul>
-              <li>NFT Mint (<code>con_pixel_frames.create_thing</code>): +5</li>
-              <li>NFT Purchase (<code>con_pixel_frames.buy_thing</code>): +3</li>
-              <li>XNS Mint (<code>con_name_service_final.mint_name</code>): +2</li>
-              <li>Xian Token Transfer (<code>currency.transfer</code>): +1 (must transfer &ge; 1 token)</li>
+              <li>PixelSnek NFT Mint (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +5</li>
+              <li>PixelSnek NFT Purchase (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +3</li>
+              <li>XNS Mint (<a href="https://xns.domains" target="_blank">Xian Name Service</a>): +2</li>
+              <li>Xian Token Transfer: +1 (must transfer &ge; 1 token)</li>
             </ul>
           </div>
         </div>
@@ -95,6 +88,6 @@
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
   </script>
-  <script src="main.js?v=8"></script>
+  <script src="main.js?v=9"></script>
 </body>
 </html>
