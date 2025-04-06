@@ -1,19 +1,47 @@
 /****************************************************
  * 1) GraphQL Query
  ****************************************************/
+function getMonthRange() {
+// Current date/time
+const now = new Date();
+
+// This month's 1st at 00:00:00 local time
+const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+
+// Next month’s 1st at 00:00:00 local time
+const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
+
+// Convert to ISO strings
+const thisMonthStartISO = thisMonthStart.toISOString(); // e.g. "2025-04-01T00:00:00.000Z"
+const nextMonthStartISO = nextMonthStart.toISOString(); // e.g. "2025-05-01T00:00:00.000Z"
+
+return { thisMonthStartISO, nextMonthStartISO };
+}
+
+// 2. Build your GraphQL query with those dates
+
+const { thisMonthStartISO, nextMonthStartISO } = getMonthRange();
+
 const query = `
 query Transactions {
-  allTransactions(filter: {created: {greaterThanOrEqualTo: "2025-04-01T00:00:00.000000", lessThan: "2025-05-01T00:00:00.000000"}}) {
+allTransactions(
+    filter: {
+    created: {
+        greaterThanOrEqualTo: "${thisMonthStartISO}",
+        lessThan: "${nextMonthStartISO}"
+    }
+    }
+) {
     edges {
-      node {
+    node {
         function
         sender
         success
         contract
         jsonContent
-      }
     }
-  }
+    }
+}
 }
 `;
 
