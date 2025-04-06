@@ -2,129 +2,87 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Xian Leaderboard (Sybil-Resistant + Bridging)</title>
+  <title>Xian Leaderboard – Volume + Sybil Checks</title>
 
   <!-- Bootstrap 5 CSS (CDN) -->
-  <link 
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
   />
 
   <style>
     .leaderboard-table th {
-      background-color: #f8f9fa; /* Slightly different background for table headers */
+      background-color: #f8f9fa;
     }
   </style>
 </head>
 <body class="bg-light">
-  
-  <div class="container my-4">
-    <h1 class="mb-4 text-center">Xian Leaderboard</h1>
 
-    <!-- Row for Scoring Explanation -->
+  <div class="container my-4">
+    <h1 class="mb-4 text-center">Xian Leaderboard – Volume-Based + Sybil-Resistant</h1>
+
+    <!-- Row: Explanation of Points -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
+        <!-- Card: Volume-Based Rewards -->
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">How Scoring Works</h4>
+            <h4 class="mb-0">Points Breakdown</h4>
           </div>
           <div class="card-body">
             <p>
-              Each type of on-chain action on Xian awards a different number of points.
-              Below is the current breakdown:
-            </p>
-            <div class="table-responsive">
-              <table class="table table-bordered table-hover">
-                <thead class="table-secondary">
-                  <tr>
-                    <th>Action</th>
-                    <th>Contract</th>
-                    <th>Function</th>
-                    <th>Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>DEX Swap</td>
-                    <td>con_dex_v2</td>
-                    <td>swapExactTokenForTokenSupportingFeeOnTransferTokens</td>
-                    <td>+5</td>
-                  </tr>
-                  <tr>
-                    <td>Add Liquidity</td>
-                    <td>con_dex_v2</td>
-                    <td>addLiquidity</td>
-                    <td>+10</td>
-                  </tr>
-                  <tr>
-                    <td>NFT Mint</td>
-                    <td>con_pixel_frames</td>
-                    <td>create_thing</td>
-                    <td>+5</td>
-                  </tr>
-                  <tr>
-                    <td>NFT Purchase</td>
-                    <td>con_pixel_frames</td>
-                    <td>buy_thing</td>
-                    <td>+3</td>
-                  </tr>
-                  <tr>
-                    <td>XNS Mint (Name Service)</td>
-                    <td>con_name_service_final</td>
-                    <td>mint_name</td>
-                    <td>+2</td>
-                  </tr>
-                  <tr>
-                    <td>Xian Token Transfer</td>
-                    <td>currency</td>
-                    <td>transfer</td>
-                    <td>+1</td>
-                  </tr>
-                  <tr>
-                    <td>Contract Deployment</td>
-                    <td>submission</td>
-                    <td>submit_contract</td>
-                    <td>+15</td>
-                  </tr>
-                  <tr>
-                    <td>Bridging USDC</td>
-                    <td>con_usdc</td>
-                    <td>mint</td>
-                    <td>+5</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sybil Resistance Explanation -->
-        <div class="card mb-4">
-          <div class="card-header bg-warning text-dark">
-            <h4 class="mb-0">Sybil Resistance Rules</h4>
-          </div>
-          <div class="card-body">
-            <p class="card-text">
-              We apply the following checks to discourage trivial or spammy transactions:
+              We reward bridging and swapping based on the <strong>volume</strong> involved, 
+              while other actions give fixed points. Here’s how it works:
             </p>
             <ul>
-              <li><strong>Minimum Swap Amount:</strong> swaps below 10 tokens earn 0 points.</li>
-              <li><strong>Minimum Transfer Amount:</strong> transfers below 1 token earn 0 points.</li>
-              <li><strong>Liquidity Threshold:</strong> addLiquidity must have at least 5 tokens (A) and 100 tokens (B).</li>
-              <li><strong>Unique Contract Code:</strong> repeated submissions of the same code yield 0 points (only the first is rewarded).</li>
-              <li><strong>Bridging Threshold:</strong> bridging must be at least 10 USDC to earn points.</li>
+              <li><strong>Bridging (con_usdc / mint):</strong> 
+                <code>1 point per 10 USDC</code>, capped at <code>100 points</code> per transaction. 
+                <em>Points go to the address in <code>kwargs.to</code>.</em>
+              </li>
+              <li><strong>Swapping (con_dex_v2 / swapExactTokenForTokenSupportingFeeOnTransferTokens):</strong> 
+                <code>1 point per 10 tokens swapped</code> (<code>amountIn</code>), 
+                capped at <code>50 points</code> per transaction.
+              </li>
+              <li><strong>Add Liquidity (con_dex_v2 / addLiquidity):</strong> +10 points (fixed)</li>
+              <li><strong>NFT Mint (con_pixel_frames / create_thing):</strong> +5 points (fixed)</li>
+              <li><strong>NFT Purchase (con_pixel_frames / buy_thing):</strong> +3 points (fixed)</li>
+              <li><strong>XNS Mint (con_name_service_final / mint_name):</strong> +2 points (fixed)</li>
+              <li><strong>Xian Token Transfer (currency / transfer):</strong> +1 point (fixed)</li>
+              <li><strong>Contract Deployment (submission / submit_contract):</strong> +15 points (fixed)</li>
             </ul>
-            <p>
-              For bridging, the points go to the <code>to</code> address (the bridged recipient), not the 
-              contract or the transaction sender. This ensures real users, not the bridge contract, get rewarded.
-            </p>
           </div>
         </div>
 
+        <!-- Card: Sybil Checks -->
+        <div class="card mb-4">
+          <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">Sybil Resistance Checks</h4>
+          </div>
+          <div class="card-body">
+            <p>
+              To discourage trivial or spammy actions, we enforce these minimums and conditions:
+            </p>
+            <ul>
+              <li><strong>Bridging Threshold:</strong> Must mint at least <code>10 USDC</code> in a single 
+                transaction to earn points.</li>
+              <li><strong>Swap Threshold:</strong> Must swap at least <code>10 tokens</code> (<code>amountIn</code>) 
+                to get any points.</li>
+              <li><strong>Transfer Threshold:</strong> Must transfer at least <code>1 token</code> to earn a point.</li>
+              <li><strong>Liquidity Threshold:</strong> Must add at least <code>5 tokens (A)</code> and 
+                <code>100 tokens (B)</code> in <code>addLiquidity</code> to get the +10 points.</li>
+              <li><strong>Unique Contract Code:</strong> Only the first submission of a given contract code 
+                (using <code>submit_contract</code>) gets points. Repeats of the exact same code yield 0.</li>
+            </ul>
+            <p class="mb-0">
+              These checks ensure that the leaderboard reflects meaningful usage rather than
+              micro-spamming or repeated duplications.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Leaderboard -->
+    <!-- Row: Leaderboard -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
         <div id="status" class="alert alert-info text-center" role="alert">
@@ -154,12 +112,10 @@
     </div>
   </div>
 
-  <!-- Bootstrap 5 JS -->
+  <!-- Bootstrap JS (optional) -->
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
   </script>
-
-  <!-- Leaderboard Logic -->
-  <script src="main.js?v=2"></script>
+  <script src="main.js?v=3"></script>
 </body>
 </html>
