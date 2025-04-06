@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Xian Leaderboard with Sybil Resistance</title>
+  <title>Xian Leaderboard (Sybil-Resistant + Bridging)</title>
 
   <!-- Bootstrap 5 CSS (CDN) -->
   <link 
@@ -11,7 +11,6 @@
   />
 
   <style>
-    /* Custom overrides or extra styling */
     .leaderboard-table th {
       background-color: #f8f9fa; /* Slightly different background for table headers */
     }
@@ -25,13 +24,12 @@
     <!-- Row for Scoring Explanation -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
-        
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
             <h4 class="mb-0">How Scoring Works</h4>
           </div>
           <div class="card-body">
-            <p class="card-text">
+            <p>
               Each type of on-chain action on Xian awards a different number of points.
               Below is the current breakdown:
             </p>
@@ -88,11 +86,17 @@
                     <td>submit_contract</td>
                     <td>+15</td>
                   </tr>
+                  <tr>
+                    <td>Bridging USDC</td>
+                    <td>con_usdc</td>
+                    <td>mint</td>
+                    <td>+5</td>
+                  </tr>
                 </tbody>
               </table>
-            </div> <!-- /.table-responsive -->
-          </div> <!-- /.card-body -->
-        </div> <!-- /.card -->
+            </div>
+          </div>
+        </div>
 
         <!-- Sybil Resistance Explanation -->
         <div class="card mb-4">
@@ -101,25 +105,26 @@
           </div>
           <div class="card-body">
             <p class="card-text">
-              To discourage spammy or trivial transactions, we apply the following checks:
+              We apply the following checks to discourage trivial or spammy transactions:
             </p>
             <ul>
-              <li><strong>Minimum Swap Amount:</strong> Swaps below <code>10</code> tokens earn 0 points.</li>
-              <li><strong>Minimum Transfer Amount:</strong> Transfers below <code>1</code> token earn 0 points.</li>
-              <li><strong>Liquidity Threshold:</strong> Add Liquidity actions must add at least <code>5</code> tokens for token A and <code>100</code> tokens for token B. Otherwise, 0 points.</li>
-              <li><strong>Unique Contract Code:</strong> Submitting the exact same contract code more than once yields 0 points (only the first is counted).</li>
+              <li><strong>Minimum Swap Amount:</strong> swaps below 10 tokens earn 0 points.</li>
+              <li><strong>Minimum Transfer Amount:</strong> transfers below 1 token earn 0 points.</li>
+              <li><strong>Liquidity Threshold:</strong> addLiquidity must have at least 5 tokens (A) and 100 tokens (B).</li>
+              <li><strong>Unique Contract Code:</strong> repeated submissions of the same code yield 0 points (only the first is rewarded).</li>
+              <li><strong>Bridging Threshold:</strong> bridging must be at least 10 USDC to earn points.</li>
             </ul>
             <p>
-              These basic filters help ensure that only meaningful on-chain actions
-              are rewarded on the leaderboard.
+              For bridging, the points go to the <code>to</code> address (the bridged recipient), not the 
+              contract or the transaction sender. This ensures real users, not the bridge contract, get rewarded.
             </p>
           </div>
         </div>
 
-      </div> <!-- /.col -->
-    </div> <!-- /.row -->
+      </div>
+    </div>
 
-    <!-- Row for Leaderboard -->
+    <!-- Leaderboard -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
         <div id="status" class="alert alert-info text-center" role="alert">
@@ -136,7 +141,7 @@
                 <thead>
                   <tr>
                     <th>Rank</th>
-                    <th>Address (sender)</th>
+                    <th>Address</th>
                     <th>Points</th>
                   </tr>
                 </thead>
@@ -145,16 +150,16 @@
             </div>
           </div> <!-- /.card-body -->
         </div> <!-- /.card -->
-      </div> <!-- /.col -->
-    </div> <!-- /.row -->
-  </div> <!-- /.container -->
+      </div>
+    </div>
+  </div>
 
-  <!-- Bootstrap 5 JS (Popper + Bootstrap) -->
+  <!-- Bootstrap 5 JS -->
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
   </script>
 
-  <!-- Script for Leaderboard Logic -->
-  <script src="main.js"></script>
+  <!-- Leaderboard Logic -->
+  <script src="main.js?v=2"></script>
 </body>
 </html>
