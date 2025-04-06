@@ -25,9 +25,9 @@ function currencyToUsdc(amount) {
   return amount * 0.01;
 }
 
-// Bridging: 1 point / 100 USDC minted, up to 5
-const BRIDGE_POINTS_PER = 100;
-const BRIDGE_CAP = 5;
+// Bridging: 1 point / 10 USDC minted, up to 50
+const BRIDGE_POINTS_PER = 10;
+const BRIDGE_CAP = 50;
 
 // Swap: 1 point / 10 USDC eq, up to 50
 const SWAP_RATIO = 10;
@@ -46,7 +46,6 @@ const FIXED_ACTIONS = {
   'con_pixel_frames|create_thing': 5,   // NFT Mint
   'con_pixel_frames|buy_thing': 3,      // NFT Purchase
   'con_name_service_final|mint_name': 2,// XNS Mint
-  'currency|transfer': 1                // Xian Token Transfer
 };
 
 /****************************************************
@@ -76,12 +75,6 @@ function getTopLevelPoints(node) {
   const key = `${contract}|${funcName}`;
   if (key in FIXED_ACTIONS) {
     points = FIXED_ACTIONS[key];
-    // e.g. Xian Transfer => must be >=1
-    if (key === 'currency|transfer') {
-      const kwargs = jsonContent?.payload?.kwargs || {};
-      const amt = parseFloat(kwargs.amount ?? '0');
-      if (amt < 1) points = 0;
-    }
     return { points, address: awardAddress };
   }
 
