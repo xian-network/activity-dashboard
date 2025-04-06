@@ -86,7 +86,7 @@ function getTopLevelPoints(node) {
     const toAddr = kwargs.to;
 
     if (minted > 0) {
-      // 1 point / 100 USDC minted, capped 5
+      // 1 point / 10 USDC minted, capped 50
       const rawPts = Math.floor(minted / BRIDGE_POINTS_PER);
       points = Math.min(rawPts, BRIDGE_CAP);
       awardAddress = toAddr;
