@@ -131,6 +131,11 @@ fetch('https://node.xian.org/graphql', {
       if (evt.event === 'Swap') {
         // data => { amount0In, amount1In, ... }
         const data = evt.data || {};
+
+        // only if pair=1
+        const pairId = evt.data_indexed?.pair;
+        if (pairId !== "1") return; 
+        
         const amount0In = parseFloat(data.amount0In ?? '0');
         const amount1In = parseFloat(data.amount1In ?? '0');
 
