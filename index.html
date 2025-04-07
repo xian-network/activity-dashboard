@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Xian Monthly Activity Dashboard</title>
+  <title>Xian Monthly Competition Dashboard</title>
 
   <!-- Bootstrap 5 (CDN) -->
-  <link
+  <link 
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
   />
@@ -14,22 +14,16 @@
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
-    integrity="sha512-..."
-    crossorigin="anonymous"
   />
 
   <style>
     .leaderboard-table th {
       background-color: #f8f9fa;
     }
-
-    /* Make the card header look more obviously clickable */
     .card-header[data-bs-toggle="collapse"] {
       cursor: pointer;
       user-select: none;
     }
-
-    /* Rotating icon when expanded (optional, purely aesthetic) */
     .card-header .collapse-indicator {
       transition: transform 0.2s ease-in-out;
     }
@@ -41,18 +35,17 @@
 <body class="bg-light">
 
   <div class="container my-4">
-    <h1 class="mb-4 text-center">Xian Monthly Activity Dashboard</h1>
+    <h1 class="mb-4 text-center">Xian Monthly Competition Dashboard</h1>
     <p class="text-center">
-      Welcome to the Xian Activity Dashboard! Here you can track your activity and see how you rank.
+      Compete, earn activity points, and win static XIAN prizes every month!
     </p>
 
     <!-- Row for Collapsible Cards -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
-
+        
         <!-- Card #1: SCORING BREAKDOWN (collapsed by default) -->
         <div class="card mb-4">
-          <!-- data-bs-toggle and data-bs-target define the collapse behavior -->
           <div 
             class="card-header bg-primary text-white"
             data-bs-toggle="collapse"
@@ -61,37 +54,35 @@
             aria-controls="scoringBreakdown"
           >
             <h4 class="mb-0 d-flex justify-content-between align-items-center">
-              <span>Scoring Breakdown</span>
-              <!-- Font Awesome icon (chevron) for visual cue -->
+              <span>Scoring Breakdown <small>(click to expand)</small></span>
               <i class="fa-solid fa-chevron-down collapse-indicator"></i>
             </h4>
           </div>
           <div id="scoringBreakdown" class="collapse">
             <div class="card-body">
               <p>
-                <strong>Bridging:</strong>
-                <em>1 point per 10 USDC minted</em> (min 10, capped at 50 points for 1 transaction).
-                <a href="https://bridge.xian.org" target="_blank">Xian Bridge</a><br>
+                <strong>Bridging:</strong> 
+                Earn <em>1 point per 10 USDC minted</em> (min 10, capped at 50 per transaction). 
+                Points are awarded to the bridged recipient (<code>kwargs.to</code>).
               </p>
               <p>
-                <strong>Swaps:</strong>
-                <em>1 point per 10 USDC eq</em> (min 10, capped at 50 for 1 transaction).<br>
-                Only tracked for xUSDC / XIAN pair.
-                <a href="https://snakexchange.org" target="_blank">SNAKexchange</a>
+                <strong>Swaps:</strong> 
+                Earn <em>1 point per 10 USDC equivalent</em> (min 10, capped at 50 per transaction).<br>
+                Only tracked for the xUSDC/XIAN pair.
               </p>
               <p>
                 <strong>Other Fixed Tasks:</strong>
               </p>
               <ul>
-                <li>PixelSnek NFT Mint (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +5</li>
-                <li>PixelSnek NFT Purchase (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +1</li>
-                <li>XNS Mint (<a href="https://xns.domains" target="_blank">Xian Name Service</a>): +5</li>
+                <li>PixelSnek NFT Mint (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +5 points</li>
+                <li>PixelSnek NFT Purchase (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +1 point</li>
+                <li>XNS Mint (<a href="https://xns.domains" target="_blank">Xian Name Service</a>): +5 points</li>
               </ul>
             </div>
           </div>
         </div>
 
-        <!-- Card #2: XIAN REWARDS (collapsed by default) -->
+        <!-- Card #2: STATIC XIAN REWARDS (collapsed by default) -->
         <div class="card mb-4">
           <div
             class="card-header bg-info text-dark"
@@ -101,30 +92,29 @@
             aria-controls="xianRewards"
           >
             <h4 class="mb-0 d-flex justify-content-between align-items-center">
-              <span>Static Xian Rewards (Monthly)</span>
-              <!-- Font Awesome icon (chevron) for visual cue -->
+              <span>Static Xian Rewards (Monthly) <small>(click to expand)</small></span>
               <i class="fa-solid fa-chevron-down collapse-indicator"></i>
             </h4>
           </div>
           <div id="xianRewards" class="collapse">
             <div class="card-body">
               <p class="mb-2">
-                At the end of each month, Xian rewards are distributed based on your final rank:
+                At month’s end, XIAN tokens are awarded based on your final rank:
               </p>
               <ul>
-                <li><strong>1st place:</strong> 5,000 XIAN</li>
-                <li><strong>2nd place:</strong> 2,500 XIAN</li>
-                <li><strong>3rd place:</strong> 1,000 XIAN</li>
-                <li><strong>4th place:</strong> 700 XIAN</li>
-                <li><strong>5th place:</strong> 600 XIAN</li>
-                <li><strong>6th place:</strong> 500 XIAN</li>
-                <li><strong>7th place:</strong> 400 XIAN</li>
-                <li><strong>8th place:</strong> 300 XIAN</li>
-                <li><strong>9th place:</strong> 200 XIAN</li>
-                <li><strong>10th–50th place:</strong> 100 XIAN each</li>
+                <li><strong>1st:</strong> 5,000 XIAN</li>
+                <li><strong>2nd:</strong> 2,500 XIAN</li>
+                <li><strong>3rd:</strong> 1,000 XIAN</li>
+                <li><strong>4th:</strong> 700 XIAN</li>
+                <li><strong>5th:</strong> 600 XIAN</li>
+                <li><strong>6th:</strong> 500 XIAN</li>
+                <li><strong>7th:</strong> 400 XIAN</li>
+                <li><strong>8th:</strong> 300 XIAN</li>
+                <li><strong>9th:</strong> 200 XIAN</li>
+                <li><strong>10th–50th:</strong> 100 XIAN each</li>
               </ul>
               <p class="mb-0">
-                These rewards are <em>static</em> each month, but your ranking depends on how many activity points you accumulate. Good luck!
+                Compete to climb the leaderboard and earn your share of the rewards!
               </p>
             </div>
           </div>
@@ -133,7 +123,7 @@
       </div>
     </div>
 
-    <!-- Leaderboard -->
+    <!-- Leaderboard Section -->
     <div class="row">
       <div class="col-12 col-lg-8 offset-lg-2">
         <div id="status" class="alert alert-info text-center">
@@ -148,7 +138,7 @@
               <script>
                 document.write(new Date().getFullYear());
               </script>
-              Leaderboard (Days Left:
+              Leaderboard (Days Left: 
               <script>
                 document.write(
                   new Date(
@@ -173,16 +163,16 @@
                 <tbody></tbody>
               </table>
             </div>
-          </div><!--/.card-body-->
-        </div><!--/.card-->
+          </div><!-- /.card-body -->
+        </div><!-- /.card -->
       </div>
     </div>
   </div>
 
   <!-- Bootstrap 5 JS (Popper + Bootstrap) -->
   <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
-  </script>
-  <script src="main.js?v=1337"></script>
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+  ></script>
+  <script src="main.js?v=1234"></script>
 </body>
 </html>
