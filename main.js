@@ -67,8 +67,8 @@ const MIN_SWAP_USDC = 10; // must swap >= 10 USDC eq
  ****************************************************/
 const FIXED_ACTIONS = {
   'con_pixel_frames|create_thing': 5,   // NFT Mint
-  'con_pixel_frames|buy_thing': 3,      // NFT Purchase
-  'con_name_service_final|mint_name': 2,// XNS Mint
+  'con_pixel_frames|buy_thing': 1,      // NFT Purchase
+  'con_name_service_final|mint_name': 5,// XNS Mint
 };
 
 /****************************************************
