@@ -4,178 +4,344 @@
   <meta charset="UTF-8" />
   <title>Xian Monthly Competition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="The Overview for the Xian Monthly Activity" />
+  <meta name="description" content="Xian Monthly Competition Dashboard" />
+
   <!-- Bootstrap 5 (CDN) -->
   <link 
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
   />
 
-  <!-- Optional: Font Awesome for icons (CDN) -->
+  <!-- Font Awesome for icons (CDN) -->
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
   />
 
-  <!-- Favicon PNG -->
+  <!-- Favicon -->
   <link rel="icon" href="logo.png" type="image/png" />
 
   <style>
-    .leaderboard-table th {
-      background-color: #f8f9fa;
+    /***********************************************
+     * 1. BODY & BACKGROUND (Like Bridge App)
+     ***********************************************/
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top, #141414, #0d0d0d);
+      color: #fff;  
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      
     }
-    .card-header[data-bs-toggle="collapse"] {
+
+    /* Subtle neon blur animation from your bridge style */
+    body::before {
+      content: "";
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: rgba(255, 0, 255, 0.3);
+      filter: blur(120px);
+      top: 20%;
+      left: 10%;
+      animation: moveBlur 8s infinite alternate ease-in-out;
+    }
+    body::after {
+      content: "";
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      background: rgba(0, 136, 255, 0.3);
+      filter: blur(100px);
+      bottom: 15%;
+      right: 10%;
+      animation: moveBlur 10s infinite alternate ease-in-out;
+    }
+    @keyframes moveBlur {
+      0% { transform: translateY(-20px); }
+      100% { transform: translateY(20px); }
+    }
+
+    /***********************************************
+     * 2. MAIN CONTAINER (Similar to .container in Bridge)
+     ***********************************************/
+    .container-competition {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 6px 30px rgba(0, 0, 0, 0.6);
+      width: 100%;
+      max-width: 800px;
+      animation: fadeIn 0.5s ease-in-out;
+      min-height: 480px; /* enough space for collapsible cards + leaderboard */
+      transition: min-height 0.3s ease;
+      position: relative;
+      z-index: 10; /* above the blurred background */
+      margin: 20px auto; /* center the container */
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /***********************************************
+     * 3. HEADER STYLES (Title & Subtitle)
+     ***********************************************/
+    .competition-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(255, 0, 255, 0.6), 0 0 20px rgba(0, 136, 255, 0.4);
+    }
+    .competition-subtitle {
+      font-size: 14px;
+      color: #ccc;
+      margin-bottom: 20px;
+    }
+
+    /***********************************************
+     * 4. COLLAPSIBLE CARDS (Similar to Bridge Input Groups)
+     ***********************************************/
+    .card-competition {
+      background: #292929;
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .card-header-competition {
+      background: none;
+      border: none;
+      padding: 14px 18px;
       cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+      font-weight: 600;
       user-select: none;
+      transition: background 0.2s ease-in-out;
     }
-    .card-header .collapse-indicator {
+    .card-header-competition:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .card-header-competition .collapse-indicator {
+      color: #ffd700; /* gold icon */
       transition: transform 0.2s ease-in-out;
     }
-    .card-header[data-bs-toggle="collapse"][aria-expanded="true"] .collapse-indicator {
+    .card-header-competition[aria-expanded="true"] .collapse-indicator {
       transform: rotate(180deg);
+    }
+    .card-body-competition {
+      background: #1a1a1a;
+      padding: 14px 18px;
+    }
+
+    /***********************************************
+     * 5. LEADERBOARD
+     ***********************************************/
+    .leaderboard-container {
+      width: 100%;
+      background: #292929;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
+      margin-top: 15px;
+      overflow: hidden;
+    }
+    .leaderboard-header {
+      background: #202020;
+      padding: 14px 18px;
+      text-align: center;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .leaderboard-header h4 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 1px;
+    }
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      color: #fff;
+    }
+    .leaderboard-table th {
+      background: #333;
+      font-weight: 600;
+      padding: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: left;
+    }
+    .leaderboard-table td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+    .leaderboard-table tr:nth-child(even) {
+      background: #242424;
+    }
+    .leaderboard-table tr:hover {
+      background: #2e2e2e;
+    }
+
+    /***********************************************
+     * 6. STATUS ALERT
+     ***********************************************/
+    #status {
+      background: #ff0080;
+      color: #fff;
+      font-weight: 500;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+      margin-bottom: 15px;
+      display: none; /* Hidden by default */
+    }
+
+    /***********************************************
+     * 7. MEDIA QUERIES (Responsive)
+     ***********************************************/
+    @media (max-width: 600px) {
+      .container-competition {
+        width: 95%;
+        max-width: 400px;
+        padding: 20px;
+        min-height: 520px;
+      }
+      .competition-title {
+        font-size: 24px;
+      }
+      .competition-subtitle {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
-<body class="bg-light">
 
-  <div class="container my-4">
-    <h1 class="mb-4 text-center">Xian Monthly Competition Dashboard</h1>
-    <p class="text-center">
-      Compete, earn activity points, and win static XIAN prizes every month!
+<body>
+  <div class="container-competition">
+    <!-- Title & Subtitle -->
+    <h1 class="competition-title">Xian Monthly Competition</h1>
+    <p class="competition-subtitle">
+      Compete for monthly Xian rewards based on your on-chain activity!
     </p>
 
-    <!-- Row for Collapsible Cards -->
-    <div class="row">
-      <div class="col-12 col-lg-8 offset-lg-2">
-        
-        <!-- Card #1: SCORING BREAKDOWN (collapsed by default) -->
-        <div class="card mb-4">
-          <div 
-            class="card-header bg-primary text-white"
-            data-bs-toggle="collapse"
-            data-bs-target="#scoringBreakdown"
-            aria-expanded="false"
-            aria-controls="scoringBreakdown"
-          >
-            <h4 class="mb-0 d-flex justify-content-between align-items-center">
-              <span>Scoring Breakdown <small>(click to expand)</small></span>
-              <i class="fa-solid fa-chevron-down collapse-indicator"></i>
-            </h4>
-          </div>
-          <div id="scoringBreakdown" class="collapse">
-            <div class="card-body">
-              <p>
-                <strong>Bridging:</strong> 
-                Earn <em>1 point per 10 USDC minted</em> (min 10, capped at 50 per transaction). 
-              </p>
-              <p>
-                <strong>Swaps:</strong> 
-                Earn <em>1 point per 10 USDC equivalent</em> (min 10, capped at 50 per transaction).<br>
-                Only tracked for the xUSDC/XIAN pair.
-              </p>
-              <p>
-                <strong>Other Fixed Tasks:</strong>
-              </p>
-              <ul>
-                <li>PixelSnek NFT Mint (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +5 points</li>
-                <li>PixelSnek NFT Purchase (<a href="https://pixelsnek.xian.org" target="_blank">PixelSnek</a>): +1 point</li>
-                <li>XNS Mint (<a href="https://xns.domains" target="_blank">Xian Name Service</a>): +5 points</li>
-              </ul>
-            </div>
-          </div>
+    <!-- Scoring Breakdown (Collapsed by default) -->
+    <div class="card-competition mb-3">
+      <div
+        class="card-header-competition"
+        data-bs-toggle="collapse"
+        data-bs-target="#scoringBreakdown"
+        aria-expanded="false"
+        aria-controls="scoringBreakdown"
+      >
+        <span>Scoring Breakdown</span>
+        <i class="fa-solid fa-chevron-down collapse-indicator"></i>
+      </div>
+      <div id="scoringBreakdown" class="collapse">
+        <div class="card-body-competition">
+          <p>
+            <strong>Bridging:</strong> 
+            1 point per 10 USDC minted (min 10, capped at 50 points/tx).
+            <a href="https://bridge.xian.org" target="_blank" style="color:#00ffff;">Xian Bridge</a>
+          </p>
+          <p>
+            <strong>Swaps:</strong> 
+            1 point per 10 USDC eq spent (min 10, capped at 50/tx).<br>
+            Only tracked for the xUSDC/XIAN pair.
+            <a href="https://snakexchange.org" target="_blank" style="color:#00ffff;">SNAKexchange</a>
+          </p>
+          <p><strong>Other Fixed Tasks:</strong></p>
+          <ul>
+            <li>PixelSnek NFT Mint (<a href="https://pixelsnek.xian.org" target="_blank" style="color:#00ffff;">PixelSnek</a>): +5</li>
+            <li>PixelSnek NFT Purchase (<a href="https://pixelsnek.xian.org" target="_blank" style="color:#00ffff;">PixelSnek</a>): +1</li>
+            <li>XNS Mint (<a href="https://xns.domains" target="_blank" style="color:#00ffff;">Xian Name Service</a>): +5</li>
+          </ul>
         </div>
-
-        <!-- Card #2: STATIC XIAN REWARDS (collapsed by default) -->
-        <div class="card mb-4">
-          <div
-            class="card-header bg-info text-dark"
-            data-bs-toggle="collapse"
-            data-bs-target="#xianRewards"
-            aria-expanded="false"
-            aria-controls="xianRewards"
-          >
-            <h4 class="mb-0 d-flex justify-content-between align-items-center">
-              <span>Static Xian Rewards (Monthly) <small>(click to expand)</small></span>
-              <i class="fa-solid fa-chevron-down collapse-indicator"></i>
-            </h4>
-          </div>
-          <div id="xianRewards" class="collapse">
-            <div class="card-body">
-              <p class="mb-2">
-                At month’s end, XIAN tokens are awarded based on your final rank:
-              </p>
-              <ul>
-                <li><strong>1st:</strong> 5,000 XIAN</li>
-                <li><strong>2nd:</strong> 2,500 XIAN</li>
-                <li><strong>3rd:</strong> 1,000 XIAN</li>
-                <li><strong>4th:</strong> 700 XIAN</li>
-                <li><strong>5th:</strong> 600 XIAN</li>
-                <li><strong>6th:</strong> 500 XIAN</li>
-                <li><strong>7th:</strong> 400 XIAN</li>
-                <li><strong>8th:</strong> 300 XIAN</li>
-                <li><strong>9th:</strong> 200 XIAN</li>
-                <li><strong>10th–50th:</strong> 100 XIAN each</li>
-              </ul>
-              <p class="mb-0">
-                Compete to climb the leaderboard and earn your share of the rewards!
-              </p>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
 
-    <!-- Leaderboard Section -->
-    <div class="row">
-      <div class="col-12 col-lg-8 offset-lg-2">
-        <div id="status" class="alert alert-info text-center">
-          Loading data…
+    <!-- Monthly Xian Rewards (Collapsed by default) -->
+    <div class="card-competition">
+      <div
+        class="card-header-competition"
+        data-bs-toggle="collapse"
+        data-bs-target="#xianRewards"
+        aria-expanded="false"
+        aria-controls="xianRewards"
+      >
+        <span>Monthly Xian Rewards</span>
+        <i class="fa-solid fa-chevron-down collapse-indicator"></i>
+      </div>
+      <div id="xianRewards" class="collapse">
+        <div class="card-body-competition">
+          <ul style="list-style:none; padding-left:0; line-height:1.8;">
+            <li><strong>1st place:</strong> 5,000 XIAN</li>
+            <li><strong>2nd place:</strong> 2,500 XIAN</li>
+            <li><strong>3rd place:</strong> 1,000 XIAN</li>
+            <li><strong>4th place:</strong> 700 XIAN</li>
+            <li><strong>5th place:</strong> 600 XIAN</li>
+            <li><strong>6th place:</strong> 500 XIAN</li>
+            <li><strong>7th place:</strong> 400 XIAN</li>
+            <li><strong>8th place:</strong> 300 XIAN</li>
+            <li><strong>9th place:</strong> 200 XIAN</li>
+            <li><strong>10th–50th place:</strong> 100 XIAN each</li>
+          </ul>
         </div>
-        <div id="leaderboard-container" class="card" style="display: none;">
-          <div class="card-header bg-success text-white">
-            <h4 class="mb-0">
-              <script>
-                document.write(new Date().toLocaleString('default', { month: 'long' }));
-              </script>
-              <script>
-                document.write(new Date().getFullYear());
-              </script>
-              Leaderboard (Days Left: 
-              <script>
-                document.write(
-                  new Date(
-                    new Date().getFullYear(),
-                    new Date().getMonth() + 1,
-                    0
-                  ).getDate() - new Date().getDate()
-                );
-              </script>)
-            </h4>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table id="leaderboard" class="table table-striped table-hover leaderboard-table mb-0">
-                <thead>
-                  <tr>
-                    <th>Rank</th>
-                    <th>Address</th>
-                    <th>Points</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div><!-- /.card-body -->
-        </div><!-- /.card -->
+      </div>
+    </div>
+
+    <!-- Status Alert -->
+    <div id="status">Loading data…</div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboard-container" class="leaderboard-container" style="display: none;">
+      <div class="leaderboard-header">
+        <h4>
+          <script>
+            document.write(new Date().toLocaleString('default', { month: 'long' }));
+          </script>
+          <script>
+            document.write(new Date().getFullYear());
+          </script>
+          Leaderboard (Days Left:
+          <script>
+            document.write(
+              new Date(
+                new Date().getFullYear(),
+                new Date().getMonth() + 1,
+                0
+              ).getDate() - new Date().getDate()
+            );
+          </script>)
+        </h4>
+      </div>
+      <div class="table-responsive">
+        <table id="leaderboard" class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Address</th>
+              <th>Points</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap 5 JS (Popper + Bootstrap) -->
-  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-  ></script>
-  <script src="main.js?v=1234"></script>
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- main.js for scoring logic -->
+  <script src="main.js?v=1"></script>
 </body>
 </html>
