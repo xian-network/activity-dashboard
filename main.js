@@ -9,11 +9,11 @@ function getMonthRange() {
 // Current date/time
 const now = new Date();
 
-// This month's 1st at 00:00:00 local time
-const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+// This month's April 1st at 00:00:00 utc time
+const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), 3, 1, 0, 0, 0));
 
-// Next month’s 1st at 00:00:00 local time
-const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0);
+// Next month’s May 1st at 00:00:00 utc time
+const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), 4, 1, 0, 0, 0));
 
 // Convert to ISO strings
 const thisMonthStartISO = thisMonthStart.toISOString(); // e.g. "2025-04-01T00:00:00.000Z"
