@@ -265,21 +265,22 @@
       <div id="scoringBreakdown" class="collapse">
         <div class="card-body-competition">
           <p>
-            <strong>Bridging:</strong> 
-            1 point per 10 USDC minted (min 10, capped at 50 points/tx).
+            <strong>Bridging (Xian&nbsp;Chain):</strong><br>
+            1&nbsp;point per&nbsp;10&nbsp;USDC bridged (minimum&nbsp;10 USDC, capped 50 pts per transaction).<br>
             <a href="https://bridge.xian.org" target="_blank" style="color:#00ffff;">Xian Bridge</a>
           </p>
+      
           <p>
-            <strong>Swaps:</strong> 
-            1 point per 10 USDC eq spent (min 10, capped at 50/tx).<br>
-            Only tracked for the xUSDC/XIAN pair.
-            <a href="https://snakexchange.org" target="_blank" style="color:#00ffff;">SNAKexchange</a>
+            <strong>Swaps (Xian&nbsp;Chain):</strong><br>
+            1&nbsp;point per&nbsp;10&nbsp;USDC-equivalent spent in the xUSDC / XIAN pair  
+            (minimum&nbsp;10 USDC eq, cap 50 pts per tx).<br>
+            <a href="https://snakexchange.org/pairs" target="_blank" style="color:#00ffff;">SNAKexchange</a>
           </p>
+      
+      
           <p><strong>Other Fixed Tasks:</strong></p>
-          <ul>
-            <li>PixelSnek NFT Mint (<a href="https://pixelsnek.xian.org" target="_blank" style="color:#00ffff;">PixelSnek</a>): +5</li>
-            <li>PixelSnek NFT Purchase (<a href="https://pixelsnek.xian.org" target="_blank" style="color:#00ffff;">PixelSnek</a>): +1</li>
-            <li>XNS Mint (<a href="https://xns.domains" target="_blank" style="color:#00ffff;">Xian Name Service</a>): +5</li>
+          <ul style="margin-bottom:0">
+            <li>XNS Name Mint: +5&nbsp;points&nbsp;(<a href="https://xns.domains" target="_blank" style="color:#00ffff;">Xian Name Service</a>)</li>
           </ul>
         </div>
       </div>
@@ -317,22 +318,30 @@
     </div>
 
     <!-- Status Alert -->
-    <div id="status">Loading data…</div>
-
+    <div id="status" class="d-flex align-items-center justify-content-center gap-2">
+      <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
+      <span>Loading data… (This may take a few seconds)</span>
+    </div>
     <!-- Leaderboard -->
     <div id="leaderboard-container" class="leaderboard-container" style="display: none;">
       <div class="leaderboard-header">
         <h4>
           <script>
             // April
-            document.write("April ");
+            document.write("May ");
           </script>
           <script>
             document.write(new Date().getFullYear());
           </script>
           Leaderboard (Days Left:
           <script>
-            document.write("0");
+            (function () {
+              const MS_PER_DAY = 864e5;                            // 1000*60*60*24
+              const now   = new Date();
+              const end   = new Date(Date.UTC(now.getUTCFullYear(), 5, 1)); // 5 = June
+              const days  = Math.max(0, Math.ceil((end - now) / MS_PER_DAY));
+              document.write(days);
+            })();
           </script>)
         </h4>
       </div>

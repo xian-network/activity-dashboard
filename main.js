@@ -1,202 +1,163 @@
-if (window.location.protocol === "http:") {
-  window.location.href = window.location.href.replace("http:", "https:");
-}
+/* main.js – Xian Monthly Competition (May 1 → June 1)
+   -----------------------------------------------------
+   Tracks:  
+     • Bridging (con_usdc.mint)  
+     • Swaps on pair 1 (xUSDC/XIAN)  
+     • XNS name mint (+5)
+   -----------------------------------------------------*/
 
-/****************************************************
- * 1) GraphQL Query
- ****************************************************/
-function getMonthRange() {
-// Current date/time
-const now = new Date();
-
-// This month's April 1st at 00:00:00 utc time
-const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), 3, 1, 0, 0, 0));
-
-// Next month’s May 1st at 00:00:00 utc time
-const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), 4, 1, 0, 0, 0));
-
-// Convert to ISO strings
-const thisMonthStartISO = thisMonthStart.toISOString(); // e.g. "2025-04-01T00:00:00.000Z"
-const nextMonthStartISO = nextMonthStart.toISOString(); // e.g. "2025-05-01T00:00:00.000Z"
-
-return { thisMonthStartISO, nextMonthStartISO };
-}
-
-// 2. Build your GraphQL query with those dates
-
-const { thisMonthStartISO, nextMonthStartISO } = getMonthRange();
-
-const query = `
-query Transactions {
-allTransactions(
-    filter: {
-    created: {
-        greaterThanOrEqualTo: "${thisMonthStartISO}",
-        lessThan: "${nextMonthStartISO}"
-    }
-    }
-) {
-    edges {
-    node {
-        function
-        sender
-        success
-        contract
-        jsonContent
-    }
-    }
-}
-}
-`;
-
-/****************************************************
- * 2) Conversion and Caps
- ****************************************************/
-// We'll treat 1 currency = 0.01 USDC
-function currencyToUsdc(amount) {
-  return amount * 0.01;
-}
-
-// Bridging: 1 point / 10 USDC minted, up to 50
-const BRIDGE_POINTS_PER = 10;
-const BRIDGE_CAP = 50;
-
-// Swap: 1 point / 10 USDC eq, up to 50
-const SWAP_RATIO = 10;
-const SWAP_CAP = 50;
-const MIN_SWAP_USDC = 10; // must swap >= 10 USDC eq
-
-/****************************************************
- * 3) Fixed-Point Tasks
- ****************************************************/
-const FIXED_ACTIONS = {
-  'con_pixel_frames|create_thing': 5,   // NFT Mint
-  'con_pixel_frames|buy_thing': 1,      // NFT Purchase
-  'con_name_service_final|mint_name': 5,// XNS Mint
-};
-
-/****************************************************
- * 4) "Immediate" Points for Bridging & Fixed
- ****************************************************/
-function getTopLevelPoints(node) {
-  const { contract, function: funcName, sender, jsonContent } = node;
-  let points = 0;
-  let awardAddress = sender;
-
-  // 4.1 Bridging: con_usdc.mint
-  if (contract === 'con_usdc' && funcName === 'mint') {
-    const kwargs = jsonContent?.payload?.kwargs || {};
-    const minted = parseFloat(kwargs.amount ?? '0');
-    const toAddr = kwargs.to;
-
-    if (minted > 0) {
-      // 1 point / 10 USDC minted, capped 50
-      const rawPts = Math.floor(minted / BRIDGE_POINTS_PER);
-      points = Math.min(rawPts, BRIDGE_CAP);
-      awardAddress = toAddr;
-    }
-    return { points, address: awardAddress };
+   if (window.location.protocol === "http:") {
+    window.location.href = window.location.href.replace("http:", "https:");
   }
-
-  // 4.2 Fixed tasks
-  const key = `${contract}|${funcName}`;
-  if (key in FIXED_ACTIONS) {
-    points = FIXED_ACTIONS[key];
-    return { points, address: awardAddress };
+  
+  /* ----------------------------------------------------
+   * DATE RANGE: fixed May 1 → June 1 of current year
+   * -------------------------------------------------- */
+  function getMayJuneRange() {
+    const yr = new Date().getUTCFullYear();
+    return {
+      thisMonthStartISO: new Date(Date.UTC(yr, 4, 1)).toISOString(), // May 1 00:00 UTC
+      nextMonthStartISO: new Date(Date.UTC(yr, 5, 1)).toISOString()  // June 1 00:00 UTC
+    };
   }
-
-  return { points: 0, address: sender };
-}
-
-/****************************************************
- * 5) We'll track net minted vs burned for liquidity
- ****************************************************/
-// Removed this, because does not represent activity
-
-/****************************************************
- * 6) MAIN
- ****************************************************/
-fetch('https://node.xian.org/graphql', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ query })
-})
-.then(res => res.json())
-.then(response => {
-  const edges = response.data.allTransactions.edges;
-  // scoreboard => immediate points from bridging, swaps, fixed
-  const scoreboard = {};
-
-  edges.forEach(({ node }) => {
-    if (!node.success) return;
-
-    // 6.1 Immediate bridging/fixed points
-    const { points, address } = getTopLevelPoints(node);
-    if (points > 0 && address) {
-      scoreboard[address] = (scoreboard[address] || 0) + points;
-    }
-
-    // 6.2 Parse con_pairs events for Swaps, Mints, Burns
-    const events = node.jsonContent?.tx_result?.events || [];
-    events.forEach(evt => {
-      if (evt.contract !== 'con_pairs') return;
-
-      // We only track pair=1
-      const pairId = evt.data_indexed?.pair;
-      if (pairId !== "1") return;
-
-      const user = evt.signer;
-      if (!user) return;
-
-      // 6.2.1: Check if it's a Swap
-      if (evt.event === 'Swap') {
-        const data = evt.data || {};
-        const amount0In = parseFloat(data.amount0In ?? '0');
-        const amount1In = parseFloat(data.amount1In ?? '0');
-
-        let usdcEq = 0;
-        // token0=con_usdc
-        if (amount0In > 0) usdcEq += amount0In;
-        // token1=currency => *0.01
-        if (amount1In > 0) usdcEq += currencyToUsdc(amount1In);
-
-        if (usdcEq >= MIN_SWAP_USDC) {
-          const rawPts = Math.floor(usdcEq / SWAP_RATIO);
-          const swapPts = Math.min(rawPts, SWAP_CAP);
-          scoreboard[user] = (scoreboard[user] || 0) + swapPts;
+  
+  /* ----------------------------------------------------
+   * SCORING CONSTANTS
+   * -------------------------------------------------- */
+  const BRIDGE_POINTS_PER_USDC = 10;          // 1 pt per 10 USDC
+  const BRIDGE_CAP               = 50;
+  
+  const SWAP_POINTS_PER_USDC     = 10;        // 1 pt per 10 USDC eq
+  const SWAP_CAP                 = 50;
+  const MIN_SWAP_USDC            = 10;
+  
+  const FIXED_ACTIONS = {                    // con|function  → pts
+    "con_name_service_final|mint_name": 5    // XNS mint
+  };
+  
+  /* ----------------------------------------------------
+   * POINT HELPERS
+   * -------------------------------------------------- */
+  function toUsdcFromCurrency(currencyAmount) {
+    return currencyAmount * 0.01;            // 1 currency = $0.01
+  }
+  
+  function pointsForBridge(mintedUsdc) {
+    return Math.min(Math.floor(mintedUsdc / BRIDGE_POINTS_PER_USDC), BRIDGE_CAP);
+  }
+  
+  function pointsForSwap(usdcEq) {
+    if (usdcEq < MIN_SWAP_USDC) return 0;
+    return Math.min(Math.floor(usdcEq / SWAP_POINTS_PER_USDC), SWAP_CAP);
+  }
+  
+  /* ----------------------------------------------------
+   * BUILD & FIRE THE GRAPHQL QUERY
+   * -------------------------------------------------- */
+  const { thisMonthStartISO, nextMonthStartISO } = getMayJuneRange();
+  
+  const query = `
+  query MonthlyTransactions {
+    allTransactions(
+      filter: {
+        created: { greaterThanOrEqualTo: "${thisMonthStartISO}", lessThan: "${nextMonthStartISO}" }
+      }
+    ) {
+      edges {
+        node {
+          function
+          sender
+          success
+          contract
+          jsonContent
         }
       }
-      // Removed tracking of add/remove liq, because does not represent activity
+    }
+  }`;
+  
+  fetch("https://node.xian.org/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query })
+  })
+    .then(res => res.json())
+    .then(({ data }) => buildLeaderboard(data.allTransactions.edges))
+    .catch(showError);
+  
+  /* ----------------------------------------------------
+   * MAIN PROCESSOR
+   * -------------------------------------------------- */
+  function buildLeaderboard(edges) {
+    const scores = {}; // address → points
+  
+    edges.forEach(({ node }) => {
+      if (!node.success) return;
+  
+      const { contract, function: fn, sender, jsonContent } = node;
+  
+      /* Fixed-point actions (XNS mint) */
+      const fixedKey = `${contract}|${fn}`;
+      if (fixedKey in FIXED_ACTIONS) {
+        scores[sender] = (scores[sender] || 0) + FIXED_ACTIONS[fixedKey];
+        return;
+      }
+  
+      /* Bridging (con_usdc.mint) */
+      if (contract === "con_usdc" && fn === "mint") {
+        const minted = parseFloat(jsonContent?.payload?.kwargs?.amount ?? "0");
+        const toAddr = jsonContent?.payload?.kwargs?.to;
+        if (minted > 0 && toAddr) {
+          scores[toAddr] = (scores[toAddr] || 0) + pointsForBridge(minted);
+        }
+        return;
+      }
+  
+      /* Swap events inside con_pairs (pair 1 only) */
+      (jsonContent?.tx_result?.events || []).forEach(evt => {
+        if (
+          evt.contract !== "con_pairs" ||
+          evt.data_indexed?.pair !== "1" ||
+          evt.event !== "Swap"
+        ) return;
+  
+        const amount0In = parseFloat(evt.data?.amount0In ?? "0"); // token0 = USDC
+        const amount1In = parseFloat(evt.data?.amount1In ?? "0"); // token1 = currency
+  
+        const usdcEq = amount0In + toUsdcFromCurrency(amount1In);
+        if (usdcEq > 0) {
+          const signer = evt.signer;
+          scores[signer] = (scores[signer] || 0) + pointsForSwap(usdcEq);
+        }
+      });
     });
-  });
-
-  /****************************************************
-   * 7) Final Step: Compute net liquidity points
-   ****************************************************/
-  // Removed this, because does not represent activity
-
-  // 8) Sort scoreboard
-  const sorted = Object.entries(scoreboard).sort((a,b) => b[1] - a[1]);
-
-  // 9) Build table
-  const tbody = document.querySelector('#leaderboard tbody');
-  sorted.forEach(([addr, pts], i) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${addr}</td>
-      <td>${pts}</td>
-    `;
-    tbody.appendChild(row);
-  });
-
-  // Show final
-  document.getElementById('status').style.display = 'none';
-  document.getElementById('leaderboard-container').style.display = 'block';
-})
-.catch(err => {
-  console.error(err);
-  const statusDiv = document.getElementById('status');
-  statusDiv.className = 'alert alert-danger text-center';
-  statusDiv.innerText = 'Error loading data. Check console.';
-});
+  
+    renderTable(sortScores(scores));
+  }
+  
+  /* ----------------------------------------------------
+   * RENDERING
+   * -------------------------------------------------- */
+  function sortScores(obj) {
+    return Object.entries(obj).sort(([, aPts], [, bPts]) => bPts - aPts);
+  }
+  
+  function renderTable(sorted) {
+    const tbody = document.querySelector("#leaderboard tbody");
+    tbody.innerHTML = ""; // clear existing
+    sorted.forEach(([addr, pts], idx) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${idx + 1}</td><td>${addr}</td><td>${pts}</td>`;
+      tbody.appendChild(row);
+    });
+    document.getElementById("status").classList.remove("d-flex");
+    document.getElementById("status").style.display = "none";
+    document.getElementById("leaderboard-container").style.display = "block";
+  }
+  
+  function showError(err) {
+    console.error(err);
+    const status = document.getElementById("status");
+    status.className = "alert alert-danger text-center";
+    status.textContent = "Error loading data. Check console.";
+  }
+  
