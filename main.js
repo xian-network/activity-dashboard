@@ -20,6 +20,13 @@
       nextMonthStartISO: new Date(Date.UTC(yr, 5, 1)).toISOString()  // June 1 00:00 UTC
     };
   }
+
+  function isDoublePointsPeriod(dateStr) {
+    const txTime = new Date(dateStr);
+    const doubleEnd = new Date(Date.UTC(txTime.getUTCFullYear(), 4, 6)); // May 6, 00:00 UTC
+    return txTime < doubleEnd;
+  }
+  
   
   /* ----------------------------------------------------
    * SCORING CONSTANTS
@@ -69,6 +76,7 @@
           sender
           success
           contract
+          created
           jsonContent
         }
       }
@@ -98,16 +106,20 @@
       /* Fixed-point actions (XNS mint) */
       const fixedKey = `${contract}|${fn}`;
       if (fixedKey in FIXED_ACTIONS) {
-        scores[sender] = (scores[sender] || 0) + FIXED_ACTIONS[fixedKey];
+        const doubleBoost = isDoublePointsPeriod(node.created) ? 2 : 1;
+        scores[sender] = (scores[sender] || 0) + FIXED_ACTIONS[fixedKey] * doubleBoost;
         return;
       }
   
       /* Bridging (con_usdc.mint) */
       if (contract === "con_usdc" && fn === "mint") {
+        
         const minted = parseFloat(jsonContent?.payload?.kwargs?.amount ?? "0");
         const toAddr = jsonContent?.payload?.kwargs?.to;
         if (minted > 0 && toAddr) {
-          scores[toAddr] = (scores[toAddr] || 0) + pointsForBridge(minted);
+          const doubleBoost = isDoublePointsPeriod(node.created) ? 2 : 1;
+          const cappedMinted = Math.min(minted, BRIDGE_CAP * BRIDGE_POINTS_PER_USDC);
+          scores[toAddr] = (scores[toAddr] || 0) + pointsForBridge(cappedMinted) * doubleBoost;
         }
         return;
       }
@@ -126,7 +138,9 @@
         const usdcEq = amount0In + toUsdcFromCurrency(amount1In);
         if (usdcEq > 0) {
           const signer = evt.signer;
-          scores[signer] = (scores[signer] || 0) + pointsForSwap(usdcEq);
+          const doubleBoost = isDoublePointsPeriod(node.created) ? 2 : 1;
+          const cappedUsdcEq = Math.min(usdcEq, SWAP_CAP * SWAP_POINTS_PER_USDC);
+          scores[signer] = (scores[signer] || 0) + pointsForSwap(cappedUsdcEq) * doubleBoost;
         }
       });
     });
