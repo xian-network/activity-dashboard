@@ -70,6 +70,7 @@
      * 2. MAIN CONTAINER (Similar to .container in Bridge)
      ***********************************************/
     .container-competition {
+      margin-top: 80px!important;
       background: #1a1a1a;
       padding: 30px;
       border-radius: 16px;
@@ -211,6 +212,7 @@
         max-width: 400px;
         padding: 20px;
         min-height: 520px;
+        margin-top: 80px!important;
       }
       .competition-title {
         font-size: 24px;
@@ -232,10 +234,43 @@
       margin: 0 10px;
       transition: color 0.2s ease-in-out;
     }
+   .announcement-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px 20px;
+  background: rgba(255, 0, 255, 0.1);
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(255, 0, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 20;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.1);
+  animation: fadeInTop 0.6s ease-out;
+}
+
+@keyframes fadeInTop {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.collapse-indicator.rotated {
+  transform: rotate(180deg);
+}
+
   </style>
 </head>
 
 <body>
+  <div class="announcement-bar text-center">
+  <i class="fa-solid fa-gift me-2"></i>
+  This month, a new token — XARB — will also be distributed to participants!
+</div>
+
   <div class="container-competition">
     <!-- Title & Subtitle -->
     <h1 class="competition-title">Xian Monthly Competition</h1>
@@ -294,25 +329,26 @@
         class="card-header-competition"
         data-bs-toggle="collapse"
         data-bs-target="#xianRewards"
-        aria-expanded="false"
+        aria-expanded="true"
         aria-controls="xianRewards"
       >
         <span>This Month's Rewards</span>
-        <i class="fa-solid fa-chevron-down collapse-indicator"></i>
+        <i class="fa-solid fa-chevron-down collapse-indicator rotated"></i>
       </div>
-      <div id="xianRewards" class="collapse">
+      <div id="xianRewards" class="collapse show">
         <div class="card-body-competition">
           <ul style="list-style:none; padding-left:0; line-height:1.8;">
-            <li><strong>1st place:</strong> 20,000 XIAN</li>
-<li><strong>2nd place:</strong> 10,000 XIAN</li>
-<li><strong>3rd place:</strong> 4,000 XIAN</li>
-<li><strong>4th place:</strong> 2,800 XIAN</li>
-<li><strong>5th place:</strong> 2,400 XIAN</li>
-<li><strong>6th place:</strong> 2,000 XIAN</li>
-<li><strong>7th place:</strong> 1,600 XIAN</li>
-<li><strong>8th place:</strong> 1,200 XIAN</li>
-<li><strong>9th place:</strong> 800 XIAN</li>
-<li><strong>10th–20th place:</strong> 400 XIAN each</li>
+            <li><strong>1st place:</strong> 20,000 XIAN + 1,000,000 XARB</li>
+<li><strong>2nd place:</strong> 10,000 XIAN + 500,000 XARB</li>
+<li><strong>3rd place:</strong> 4,000 XIAN + 300,000 XARB</li>
+<li><strong>4th place:</strong> 2,800 XIAN + 250,000 XARB</li>
+<li><strong>5th place:</strong> 2,400 XIAN + 200,000 XARB</li>
+<li><strong>6th place:</strong> 2,000 XIAN + 160,000 XARB</li>
+<li><strong>7th place:</strong> 1,600 XIAN + 130,000 XARB</li>
+<li><strong>8th place:</strong> 1,200 XIAN + 110,000 XARB</li>
+<li><strong>9th place:</strong> 800 XIAN + 60,000 XARB</li>
+<li><strong>10th place:</strong> 600 XIAN + 40,000 XARB</li>
+<li><strong>11th–20th place:</strong> 400 XIAN each + 25,000 XARB each</li>
 
           </ul>
         </div>
