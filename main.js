@@ -114,7 +114,7 @@ function buildLeaderboard(edges) {
     }
 
     // Bridging (con_usdc.mint)
-    if (contract === "con_usdc" && fn === "mint") {
+    /*if (contract === "con_usdc" && fn === "mint") {
       const minted = parseFloat(jsonContent?.payload?.kwargs?.amount ?? "0");
       const toAddr = jsonContent?.payload?.kwargs?.to;
       if (minted > 0 && toAddr) {
@@ -125,7 +125,7 @@ function buildLeaderboard(edges) {
         }
       }
       return;
-    }
+    }*/
 
     // Swap events inside con_pairs (pair 1 only)
     (jsonContent?.tx_result?.events || []).forEach(evt => {
