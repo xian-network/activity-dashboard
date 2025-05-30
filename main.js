@@ -45,7 +45,7 @@ const FIXED_ACTIONS = {
  * POINT HELPERS
  * -------------------------------------------------- */
 function toUsdcFromCurrency(currencyAmount) {
-  return currencyAmount * 0.01;
+  return currencyAmount * 0.0129;
 }
 
 function pointsForBridge(mintedUsdc) {
