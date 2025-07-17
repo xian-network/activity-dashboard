@@ -272,47 +272,66 @@
 </div>
 
   <div class="container-competition">
-    <!-- Title & Subtitle -->
+    <!-- title -->
     <h1 class="competition-title">Xian Monthly Competition</h1>
     <p class="competition-subtitle">
-      Compete for monthly Xian rewards based on your on-chain activity!
+      Earn points for **net new activity** on-chain and climb the leaderboard.
     </p>
-    
-    
+
+    <!-- quick links -->
     <div class="menu-links">
-      <a href="https://xian.org" target="_blank">XIAN.org</a>
-      <span style="color: #00ffff;"> | </span>
+      <a href="https://xian.org"           target="_blank">XIAN.org</a>
+      <span style="color:#00ffff;">|</span>
       <a href="https://chromewebstore.google.com/detail/xian-wallet/kcimjjhplbcgkcnanijkolfillgfanlc/" target="_blank">Wallet</a>
-      <span style="color: #00ffff;"> | </span>
+      <span style="color:#00ffff;">|</span>
       <a href="https://t.me/xian_network/" target="_blank">Telegram</a>
     </div>
 
-    <!-- Scoring Breakdown (Collapsed by default) -->
+     <!-- NEW: how-it-works card -->
     <div class="card-competition mb-3">
-      <div
-        class="card-header-competition"
-        data-bs-toggle="collapse"
-        data-bs-target="#scoringBreakdown"
-        aria-expanded="false"
-        aria-controls="scoringBreakdown"
-      >
-        <span>Scoring Breakdown</span>
+      <div class="card-header-competition" data-bs-toggle="collapse"
+           data-bs-target="#howItWorks" aria-expanded="false">
+        <span>How scoring works (anti-wash)</span>
+        <i class="fa-solid fa-chevron-down collapse-indicator"></i>
+      </div>
+      <div id="howItWorks" class="collapse">
+        <div class="card-body-competition">
+
+<p><strong>Net-flow, not raw volume.</strong><br>
+For swaps, only your <em>net USDC value</em> added to the xUSDC&nbsp;/&nbsp;XIAN pool
+counts (<code>buys − sells</code>). If you buy&nbsp;100&nbsp;USDC of XIAN and later sell&nbsp;80&nbsp;USDC back, your score is based on the <strong>+20 USDC</strong> that is still “in” the pool.</p>
+
+<p><strong>24-hour hold weight.</strong><br>
+Every trade ages-in over 24 h. A position held for the full day earns 100 % credit; one held only&nbsp;1 h earns&nbsp;≈ 4 %.<br>
+<span class="text-warning">Boundary snipes (buying 2 min before June 1) therefore earn almost nothing.</span></p>
+
+<p><strong>Caps &amp; minimums unchanged.</strong><br>
+• Min swap to score: 10 USDC-eq<br>
+• Per-tx cap: 50 pts<br>
+• Early-bird double points May 1 – May 6</p>
+
+<p class="mb-0"><a href="#faq" data-bs-toggle="collapse" style="color:#00ffff;">Read full FAQ</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- scoring breakdown (verbiage updated slightly) -->
+    <div class="card-competition mb-3">
+      <div class="card-header-competition" data-bs-toggle="collapse"
+           data-bs-target="#scoringBreakdown" aria-expanded="false">
+        <span>Point sources</span>
         <i class="fa-solid fa-chevron-down collapse-indicator"></i>
       </div>
       <div id="scoringBreakdown" class="collapse">
         <div class="card-body-competition">
-      
-          <p>
-            <strong>Swaps (Xian&nbsp;Chain):</strong><br>
-            1&nbsp;point per&nbsp;10&nbsp;USDC-equivalent spent in the xUSDC / XIAN pair  
-            (minimum&nbsp;10 USDC eq, cap 50 pts per tx).<br>
-            <a href="https://snakexchange.org/pairs" target="_blank" style="color:#00ffff;">SNAKexchange</a>
-          </p>
-      
-      
-          <p><strong>Other Fixed Tasks:</strong></p>
-          <ul style="margin-bottom:0">
-            <li>XNS Name Mint: +5&nbsp;points&nbsp;(<a href="https://xns.domains" target="_blank" style="color:#00ffff;">Xian Name Service</a>)</li>
+          <p><strong>Swaps (Xian chain):</strong><br>
+             1&nbsp;point per <em>net</em> 10 USDC-equivalent added to the
+             xUSDC&nbsp;/&nbsp;XIAN pool (min&nbsp;10 USDC, max 50 pts per tx).</p>
+
+          <p><strong>Other fixed tasks:</strong></p>
+          <ul class="mb-0">
+            <li>XNS name mint – 5 pts (<a href="https://xns.domains"
+                target="_blank" style="color:#00ffff;">Xian Name Service</a>)</li>
           </ul>
         </div>
       </div>
@@ -349,7 +368,23 @@
         </div>
       </div>
     </div>
-
+    <!-- FAQ inside collapsible -->
+    <div id="faq" class="collapse">
+      <div class="card-competition mt-3">
+        <div class="card-header-competition">
+          FAQ &nbsp;<i class="fa-regular fa-circle-question"></i>
+        </div>
+        <div class="card-body-competition">
+          <p><strong>Why net-flow?</strong> It rewards liquidity that stays in
+             the pool instead of wash volume.</p>
+          <p><strong>What if I reduce my position?</strong> Only the part still
+             in the pool at the snapshot ages further and scores.</p>
+          <p class="mb-0"><strong>When is the final snapshot?</strong>
+   Scores are live until June 1 00:00 UTC; trades less than 24 h old
+   receive only partial credit.</p>
+        </div>
+      </div>
+    </div>
     <!-- Status Alert -->
     <div id="status" class="d-flex align-items-center justify-content-center gap-2">
       <div class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></div>
