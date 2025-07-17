@@ -3,29 +3,28 @@
    Rewards real activity while blocking end‑of‑epoch wash loops.
    Scoring formula  (per wallet):
      points = fixedXNS
-            + f( netBridgeUSDC )
             + f( netSwapUSDC )
 
-   where netBridge / netSwap are **signed net‑flows** weighted by
-   how long the value stays on‑chain (0–24 h ramp‑up).  A buy that
-   is reverted within 24 h earns almost zero credit.
+   where netSwap is the **signed net‑flow** in the xUSDC/XIAN pool
+   weighted by how long the value stays on‑chain (0 – 24 h ramp‑up).
+   A buy that is reverted within 24 h earns almost zero credit.
    ------------------------------------------------------------------*/
 
 /* ──────────────────────────────────────────────────────────────────
- * 1.  Force HTTPS in production
+ * 1. Force HTTPS in production
  * ─────────────────────────────────────────────────────────────────*/
 if (window.location.protocol === 'http:') {
   window.location.href = window.location.href.replace('http:', 'https:');
 }
 
 /* ──────────────────────────────────────────────────────────────────
- * 2.  DATE RANGE: fixed May 1 → June 1 of current year (UTC)
+ * 2. DATE RANGE: fixed May 1 → June 1 of current year (UTC)
  * ─────────────────────────────────────────────────────────────────*/
 function getMayJuneRange() {
   const yr = new Date().getUTCFullYear();
   return {
-    thisMonthStartISO: new Date(Date.UTC(yr, 4, 1)).toISOString(),  // May 1 00:00
-    nextMonthStartISO: new Date(Date.UTC(yr, 5, 1)).toISOString()   // Jun 1 00:00
+    thisMonthStartISO: new Date(Date.UTC(yr, 4, 1)).toISOString(), // May 1 00:00
+    nextMonthStartISO: new Date(Date.UTC(yr, 5, 1)).toISOString()  // Jun 1 00:00
   };
 }
 
@@ -37,42 +36,33 @@ function isDoublePointsPeriod(dateStr) {
 }
 
 /* ──────────────────────────────────────────────────────────────────
- * 3.  SCORING CONSTANTS (caps unchanged)
+ * 3. SCORING CONSTANTS (only swaps + fixed)
  * ─────────────────────────────────────────────────────────────────*/
-const BRIDGE_POINTS_PER_USDC = 0;
-const BRIDGE_CAP             = 5000;   // max 5000 pts
-
-const SWAP_POINTS_PER_USDC   = 10;
-const SWAP_CAP               = 5000;   // max 5000 pts
-const MIN_SWAP_USDC          = 10;
+const SWAP_POINTS_PER_USDC = 10;  // 1 pt per 10 USDC net
+const SWAP_CAP             = 5000; // max 5 000 pts (50 000 USDC net)
+const MIN_SWAP_USDC        = 10;   // ignore dust
 
 const FIXED_ACTIONS = {
-  'con_name_service_final|mint_name': 5
+  'con_name_service_final|mint_name': 5,
 };
 
 /* ──────────────────────────────────────────────────────────────────
- * 4.  HOLD‑WEIGHT PARAMETERS (anti‑boundary‑snipe)
- *      • full weight when trade happens ≥24 h before contest end
- *      • linear ramp‑down to 0 at the final block
+ * 4. HOLD‑WEIGHT PARAMETERS (anti‑boundary‑snipe)
  * ─────────────────────────────────────────────────────────────────*/
 const { thisMonthStartISO, nextMonthStartISO } = getMayJuneRange();
-const HOLD_MS      = 24 * 60 * 60 * 1_000;          // 24 hours in ms
-const CONTEST_END  = new Date(nextMonthStartISO).getTime();
+const HOLD_MS     = 24 * 60 * 60 * 1000;                    // 24 h
+const CONTEST_END = new Date(nextMonthStartISO).getTime();  // Jun 1 00:00 UTC
 
 function holdWeight(txMillis) {
   return Math.max(0, Math.min(1, (CONTEST_END - txMillis) / HOLD_MS));
 }
 
 /* ──────────────────────────────────────────────────────────────────
- * 5.  POINT HELPERS
+ * 5. HELPERS
  * ─────────────────────────────────────────────────────────────────*/
-function toUsdcFromCurrency(currencyAmount) {
-  // 1 XIAN ≈ 0.0129 USDC (spot when constants set)
-  return currencyAmount * 0.0129;
-}
-
-function pointsForBridge(usdc) {
-  return Math.min(Math.floor(usdc / BRIDGE_POINTS_PER_USDC), BRIDGE_CAP);
+function toUsdcFromCurrency(xianAmt) {
+  // 1 XIAN ≈ 0.0129 USDC (calibration point)
+  return xianAmt * 0.0129;
 }
 
 function pointsForSwap(usdc) {
@@ -80,9 +70,8 @@ function pointsForSwap(usdc) {
   return Math.min(Math.floor(usdc / SWAP_POINTS_PER_USDC), SWAP_CAP);
 }
 
-// Convenience: convert USDC+XIAN four‑way in/out to signed net‑USD delta
-function usdcEquivalent(amountUSDC, amountXIAN) {
-  return amountUSDC + toUsdcFromCurrency(amountXIAN);
+function usdcEquivalent(usd0, xian1) {
+  return usd0 + toUsdcFromCurrency(xian1);
 }
 
 function netUsdDelta(evt) {
@@ -94,7 +83,7 @@ function netUsdDelta(evt) {
 }
 
 /* ──────────────────────────────────────────────────────────────────
- * 6.  GRAPHQL QUERY (May 1 → June 1)
+ * 6. GRAPHQL QUERY (May 1 → June 1)
  * ─────────────────────────────────────────────────────────────────*/
 const query = `
 query MonthlyTransactions {
@@ -119,17 +108,17 @@ query MonthlyTransactions {
 fetch('https://node.xian.org/graphql', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ query })
+  body: JSON.stringify({ query }),
 })
-  .then(res => res.json())
+  .then((res) => res.json())
   .then(({ data }) => buildLeaderboard(data.allTransactions.edges))
   .catch(showError);
 
 /* ──────────────────────────────────────────────────────────────────
- * 7.  MAIN AGGREGATOR (wash‑resistant)
+ * 7. MAIN AGGREGATOR (swaps only)
  * ─────────────────────────────────────────────────────────────────*/
 function buildLeaderboard(edges) {
-  // wallet → { fixed, netBridgeUSD, netSwapUSD }
+  // wallet → { fixed, netSwapUSD }
   const wallets = {};
 
   edges.forEach(({ node }) => {
@@ -139,65 +128,55 @@ function buildLeaderboard(edges) {
     const boost    = isDoublePointsPeriod(node.created) ? 2 : 1;
     const wFactor  = holdWeight(tsMillis);
 
-    // ░░ Fixed‑point actions (e.g. XNS mint) ░░
+    // ── fixed actions (XNS mint) ──
     const fixedKey = `${node.contract}|${node.function}`;
-    if (fixedKey in FIXED_ACTIONS) {
+    if (FIXED_ACTIONS[fixedKey]) {
       const pts = FIXED_ACTIONS[fixedKey] * boost;
       if (pts) {
-        const w = wallets[node.sender] ||= { fixed:0, netBridge:0, netSwap:0 };
+        const w = (wallets[node.sender] ||= { fixed: 0, netSwap: 0 });
         w.fixed += pts;
-      }
-      return; // no further parsing needed
-    }
-
-    // ░░ Bridge mints (con_usdc.mint) ░░
-    if (node.contract === 'con_usdc' && node.function === 'mint') {
-      const minted = parseFloat(node.jsonContent?.payload?.kwargs?.amount ?? '0');
-      const toAddr = node.jsonContent?.payload?.kwargs?.to;
-      if (minted > 0 && toAddr) {
-        const w = wallets[toAddr] ||= { fixed:0, netBridge:0, netSwap:0 };
-        w.netBridge += minted * boost * wFactor; // only positive direction matters
       }
       return;
     }
 
-    // ░░ Swaps on pair 1 (xUSDC/XIAN) ░░
-    (node.jsonContent?.tx_result?.events || []).forEach(evt => {
-      if (evt.contract !== 'con_pairs' || evt.event !== 'Swap' || evt.data_indexed?.pair !== '1') return;
+    // ── swaps (pair 1) ──
+    (node.jsonContent?.tx_result?.events || []).forEach((evt) => {
+      if (
+        evt.contract !== 'con_pairs' ||
+        evt.event !== 'Swap' ||
+        evt.data_indexed?.pair !== '1'
+      )
+        return;
 
-      const delta = netUsdDelta(evt) * boost * wFactor; // signed (+ buys, – sells)
+      const delta = netUsdDelta(evt) * boost * wFactor; // signed
       if (!delta) return;
 
-      const signer = evt.signer;
-      const w = wallets[signer] ||= { fixed:0, netBridge:0, netSwap:0 };
+      const w = (wallets[evt.signer] ||= { fixed: 0, netSwap: 0 });
       w.netSwap += delta; // can be negative
     });
   });
 
-  /* ── Convert to capped positive points ── */
-  const totals = Object.entries(wallets).map(([addr, { fixed, netBridge, netSwap }]) => {
-    const bridgePts = pointsForBridge(Math.min(Math.max(netBridge, 0), BRIDGE_CAP * BRIDGE_POINTS_PER_USDC));
-    const swapPts   = pointsForSwap(  Math.min(Math.max(netSwap,   0), SWAP_CAP   * SWAP_POINTS_PER_USDC));
-    return [addr, fixed + bridgePts + swapPts];
+  // ── convert to points ──
+  const totals = Object.entries(wallets).map(([addr, { fixed, netSwap }]) => {
+    const swapPts = pointsForSwap(
+      Math.min(Math.max(netSwap, 0), SWAP_CAP * SWAP_POINTS_PER_USDC)
+    );
+    return [addr, fixed + swapPts];
   });
 
   renderTable(totals.sort((a, b) => b[1] - a[1]));
 }
 
 /* ──────────────────────────────────────────────────────────────────
- * 8.  RENDERING + ERROR UI
+ * 8. RENDERING + ERROR UI
  * ─────────────────────────────────────────────────────────────────*/
-function sortScores(obj) {
-  return Object.entries(obj).sort(([, a], [, b]) => b - a);
-}
-
 function renderTable(sorted) {
   const tbody = document.querySelector('#leaderboard tbody');
   tbody.innerHTML = '';
   sorted.forEach(([addr, pts], idx) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${idx + 1}</td><td>${addr}</td><td>${pts}</td>`;
-    tbody.appendChild(row);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${idx + 1}</td><td>${addr}</td><td>${pts}</td>`;
+    tbody.appendChild(tr);
   });
   document.getElementById('status').classList.remove('d-flex');
   document.getElementById('status').style.display = 'none';
