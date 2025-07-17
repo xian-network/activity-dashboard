@@ -40,10 +40,10 @@ function isDoublePointsPeriod(dateStr) {
  * 3.  SCORING CONSTANTS (caps unchanged)
  * ─────────────────────────────────────────────────────────────────*/
 const BRIDGE_POINTS_PER_USDC = 10;
-const BRIDGE_CAP             = 50;   // max 500 pts
+const BRIDGE_CAP             = 5000;   // max 5000 pts
 
 const SWAP_POINTS_PER_USDC   = 10;
-const SWAP_CAP               = 50;   // max 500 pts
+const SWAP_CAP               = 5000;   // max 5000 pts
 const MIN_SWAP_USDC          = 10;
 
 const FIXED_ACTIONS = {
