@@ -158,9 +158,7 @@ function buildLeaderboard(edges) {
 
   // ── convert to points ──
   const totals = Object.entries(wallets).map(([addr, { fixed, netSwap }]) => {
-    const swapPts = pointsForSwap(
-      Math.min(Math.max(netSwap, 0), SWAP_CAP * SWAP_POINTS_PER_USDC)
-    );
+    const swapPts = pointsForSwap(Math.max(netSwap, 0));
     return [addr, fixed + swapPts];
   });
 
